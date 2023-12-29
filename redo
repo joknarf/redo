@@ -1,3 +1,6 @@
+# redo bash command history
+# Author : Franck Jouvanceau
+#
 _redo_selector()
 {
   printf "\r" >&2
