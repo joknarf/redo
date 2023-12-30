@@ -38,7 +38,7 @@ _redo_binds()
   bind -m vi-insert '"\e/": ".\C-xk$('"$_redo_lc"'_redo_selector \"\C-y\C-h\")\C-xx\C-xr"'
   bind -m vi-insert '"\C-r": ".\C-xk$('"$_redo_lc"'_redo_selector \"\C-y\C-h\")\C-xx\C-xr"'
 
-  bind -m vi-command '"/": "i.\C-xk$('"$_redo_lc"'_redo_selector \"\C-y\C-h\")\C-xx\C-xr"'
+  bind -m vi-command '"/": "a.\C-xk$('"$_redo_lc"'_redo_selector \"\C-y\C-h\")\C-xx\C-xr"'
 
   bind -m emacs-standard '"\C-xr": redraw-current-line'
   bind -m emacs-standard '"\C-xx": shell-expand-line'
@@ -72,6 +72,7 @@ function _menuprompt
 {
   typeset form filter=${3:-${_aitems[$_nsel]}} nb="$_nsel/$2 "
   [ "$3" ] && nb=""
+  printf "\r"
   form="$1: %s%s"
   [ "$_powerline" = "y" ] && {
     [ "$3" ] && form="\e[30m\e[44m\e[97m $1 \e[0m\e[34m\e[44m\e[49m\e[0m %s%s" || \
