@@ -242,7 +242,7 @@ function _domenu
         unset _maxlines
         _showmenu "$prompt" "$_nsel" "$nbitems" "$filter";;
       $'\x0d'|''|$'\n') # enter
-        selected="${_aitems[$_nsel]}"
+        [[ "$filter" =~ ^[0-9]+$ ]] && selected="${_aitems[$filter]}" || selected="${_aitems[$_nsel]}"
         break;;     
       $'\t') # tab
         _items_split "$filter"
