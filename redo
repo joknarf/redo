@@ -5,13 +5,13 @@ type tac >/dev/null 2>&1 || alias tac='tail -r'
 _redo_selector()
 {
   printf "\r" >&2
-  selector -p redo -f <(fc -n -l -1000|\
+  selector -p redo -i "$(fc -n -l -1000|\
       sed -e $'s/^\t redo /\t /' -e 's/ *$//' |\
       tac|awk '
         BEGIN{ done["\t"]=1 }
         $0 in done {next}
         $0 ~ "^\t .*"w{done[$0]=1;print $0}
-      ' w="$1") -m 10
+      ' w="$1")" -m 10
 }
 
 _redo_completions()
