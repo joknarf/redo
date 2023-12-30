@@ -1,7 +1,9 @@
 # redo bash command history
 # Author : Franck Jouvanceau
 #
+
 type tac >/dev/null 2>&1 || alias tac='tail -r'
+
 _redo_selector()
 {
   printf "\r" >&2
@@ -23,26 +25,34 @@ _redo_completions()
   [ ! "${COMPREPLY[0]}" ] && COMPREPLY=()
 }
 
-[ "$(uname -s)" = Darwin ] && _redo_lc="LC_ALL=C " || _redo_lc=""
+_redo_binds()
+{
+  [ "$(uname -s)" = Darwin ] && _redo_lc="LC_ALL=C " || _redo_lc=""
 
-complete -F _redo_completions redo
+  bind "set convert-meta on"
+  bind '"\C-xr": redraw-current-line'
+  bind '"\C-xx": shell-expand-line'
+  bind '"\C-xk": backward-kill-line'
+  bind '"\C-xy": yank'
+  bind -r '\C-r'
+  bind -r '\ex'
+  bind -r '\e/'
+  bind -r '\M-/'
+  bind '"\ex": ".\C-xk$('"$_redo_lc"'_redo_selector \"\C-xy\C-h\")\C-xx\C-xr"'
+  bind '"\C-r": ".\C-xk$('"$_redo_lc"'_redo_selector \"\C-xy\C-h\")\C-xx\C-xr"'
+  bind '"\e/": ".\C-xk$('"$_redo_lc"'_redo_selector \"\C-xy\C-h\")\C-xx\C-xr"'
+  bind '"\M-/": ".\C-xk$('"$_redo_lc"'_redo_selector \"\C-xy\C-h\")\C-xx\C-xr"'
 
-bind "set convert-meta on"
-bind '"\C-xr": redraw-current-line'
-bind '"\C-xx": shell-expand-line'
-bind '"\C-xk": backward-kill-line'
-bind '"\C-xy": yank'
-bind '"\ex": ".\C-xk$('"$_redo_lc"'_redo_selector \"\C-xy\C-h\")\C-xx\C-xr"'
-bind '"\C-r": ".\C-xk$('"$_redo_lc"'_redo_selector \"\C-xy\C-h\")\C-xx\C-xr"'
-bind '"\e/": ".\C-xk$('"$_redo_lc"'_redo_selector \"\C-xy\C-h\")\C-xx\C-xr"'
-bind '"\M-/": ".\C-xk$('"$_redo_lc"'_redo_selector \"\C-xy\C-h\")\C-xx\C-xr"'
-
-unset _redo_lc
+  unset _redo_lc
+}
 
 redo()
 {
     "$@"
 }
+
+_redo_binds
+complete -F _redo_completions redo
 
 # selector from https://ghithub.com/joknarf/selector
 
@@ -189,7 +199,6 @@ function _domenu
         break;;
       [[:graph:]]|" ") #text [a-zA-Z0-9/_?*\(\)\ .-]) 
         filter="$filter$k"
-        [ "$filter" = ":q" ] && break
         [ "$_autofilter" = y ] && [[ ! "$filter" =~ ^[0-9]+$ ]] && {
           tput ed
           _items_split "$filter"
