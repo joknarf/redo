@@ -241,16 +241,17 @@ function _domenu
       $'\x01') # Ctl-A => all
         unset _maxlines
         _showmenu "$prompt" "$_nsel" "$nbitems" "$filter";;
-      $'\t') # tab
+      $'\x0d'|''|$'\n') # enter
         selected="${_aitems[$_nsel]}"
         break;;     
-      $'\x0d'|''|$'\n') #enter
-        tput ed
+      $'\t') # tab
         _items_split "$filter"
         [ ! "$_items" ] && break
         nbitems=${#_aitems[@]}
         [ $nbitems = 1 ] && selected="${_aitems[1]}" && break
+        _items_ori="$_items"
         filter=""
+        tput ed
         _showmenu "$prompt" "$_nsel" "$nbitems" "$filter";;
       *) break;
     esac
