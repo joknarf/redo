@@ -164,6 +164,7 @@ function _domenu
     unset _nsel
     return 0
   }
+  _items_ori="$_items"
   filter=""
   tput civis
   stty -echo
@@ -200,17 +201,34 @@ function _domenu
           esac;;
       $'\x7f') #backspace
         filter=${filter%?}
-        _menuprompt "$prompt" "$nbitems" "$filter";;
+        _items="$_items_ori"
+        _items_split "$filter"
+        nbitems=${#_aitems[@]}
+        [ $_autofilter = y ] && _showmenu "$prompt" "$_nsel" "$nbitems" "$filter" || \
+          _menuprompt "$prompt" "$nbitems" "$filter"
+        ;;
       $'\xf8') #meta (macos)
         break;;
       [[:graph:]]|" ") #text [a-zA-Z0-9/_?*\(\)\ .-]) 
         filter="$filter$k"
         [ "$_autofilter" = y ] && [[ ! "$filter" =~ ^[0-9]+$ ]] && {
-          tput ed
           _items_split "$filter"
-          [ ! "$_items" ] && break
+          [ ! "$_items" ] && {
+            printf "Not found !"
+            read -rs${o}4 -t.5 k 2>/dev/null
+            _items="$_items_ori"
+            filter=""
+            _nsel=""
+            _items_split "$filter"
+          }
           nbitems=${#_aitems[@]}
-          [ $nbitems = 1 ] && selected="${_aitems[1]}" && break
+          [ $nbitems = 1 ] && { 
+            _menuprompt "$prompt" "$nbitems" "$filter"
+            read -rs${o}2 -t.5 k
+            selected="${_aitems[1]}"
+            break
+          }
+          tput ed
           _showmenu "$prompt" "$_nsel" "$nbitems" "$filter"
         }
         _menuprompt "$prompt" "$nbitems" "$filter";;
@@ -239,6 +257,7 @@ function _domenu
   done
   unset _nsel
   unset _aitems
+  unset _items_ori
   tput ed
   tput cnorm
 }
