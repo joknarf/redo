@@ -30,18 +30,23 @@ _redo_binds()
   [ "$(uname -s)" = Darwin ] && _redo_lc="LC_ALL=C " || _redo_lc=""
 
   bind "set convert-meta on"
-  bind '"\C-xr": redraw-current-line'
-  bind '"\C-xx": shell-expand-line'
-  bind '"\C-xk": backward-kill-line'
-  bind '"\C-xy": yank'
-  bind -r '\C-r'
-  bind -r '\ex'
-  bind -r '\e/'
-  bind -r '\M-/'
-  bind '"\ex": ".\C-xk$('"$_redo_lc"'_redo_selector \"\C-xy\C-h\")\C-xx\C-xr"'
-  bind '"\C-r": ".\C-xk$('"$_redo_lc"'_redo_selector \"\C-xy\C-h\")\C-xx\C-xr"'
-  bind '"\e/": ".\C-xk$('"$_redo_lc"'_redo_selector \"\C-xy\C-h\")\C-xx\C-xr"'
-  bind '"\M-/": ".\C-xk$('"$_redo_lc"'_redo_selector \"\C-xy\C-h\")\C-xx\C-xr"'
+
+  bind -m vi-insert '"\C-xr": redraw-current-line'
+  bind -m vi-insert '"\C-xx": shell-expand-line'
+  bind -m vi-insert '"\C-xk": backward-kill-line'
+  bind -m vi-insert '"\ex": ".\C-xk$('"$_redo_lc"'_redo_selector \"\C-y\C-h\")\C-xx\C-xr"'
+  bind -m vi-insert '"\e/": ".\C-xk$('"$_redo_lc"'_redo_selector \"\C-y\C-h\")\C-xx\C-xr"'
+  bind -m vi-insert '"\C-r": ".\C-xk$('"$_redo_lc"'_redo_selector \"\C-y\C-h\")\C-xx\C-xr"'
+
+  bind -m vi-command '"/": "i.\C-xk$('"$_redo_lc"'_redo_selector \"\C-y\C-h\")\C-xx\C-xr"'
+
+  bind -m emacs-standard '"\C-xr": redraw-current-line'
+  bind -m emacs-standard '"\C-xx": shell-expand-line'
+  bind -m emacs-standard '"\C-xk": backward-kill-line'
+  bind -m emacs-standard '"\ex": ".\C-xk$('"$_redo_lc"'_redo_selector \"\C-y\C-h\")\C-xx\C-xr"'
+  bind -m emacs-standard '"\C-r": ".\C-xk$('"$_redo_lc"'_redo_selector \"\C-y\C-h\")\C-xx\C-xr"'
+  bind -m emacs-standard '"\e/": ".\C-xk$('"$_redo_lc"'_redo_selector \"\C-y\C-h\")\C-xx\C-xr"'
+  bind -m emacs-standard '"\M-/": ".\C-xk$('"$_redo_lc"'_redo_selector \"\C-y\C-h\")\C-xx\C-xr"'
 
   unset _redo_lc
 }
