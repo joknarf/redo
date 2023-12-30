@@ -224,7 +224,7 @@ function _domenu
           nbitems=${#_aitems[@]}
           [ $nbitems = 1 ] && { 
             _menuprompt "$prompt" "$nbitems" "$filter"
-            read -rs${o}2 -t.5 k
+            read -rs${o}2 -t.5 k  2>/dev/null
             selected="${_aitems[1]}"
             break
           }
