@@ -1,6 +1,7 @@
 # redo bash command history
 # Author : Franck Jouvanceau
 #
+type tac >/dev/null 2>&1 || alias tac='tail -r'
 _redo_selector()
 {
   printf "\r" >&2
@@ -9,7 +10,7 @@ _redo_selector()
       tac|awk '
         BEGIN{ done["\t"]=1 }
         $0 in done {next}
-        $0 ~ "^\t.*"w{done[$0]=1;print $0}
+        $0 ~ "^\t .*"w{done[$0]=1;print $0}
       ' w="$1") -m 10
 }
 
@@ -28,7 +29,8 @@ bind '"\C-xr": redraw-current-line'
 bind '"\C-xx": shell-expand-line'
 bind '"\C-xk": backward-kill-line'
 bind '"\C-xy": yank'
-bind '"\ex": '"'"'.\C-xk$(_redo_selector "\C-xy\C-h")\C-xx\C-xr'"'"
+bind '"\ex": ".\C-xk$(_redo_selector \"\C-xy\C-h\")\C-xx\C-xr"'
+bind '"\C-r": ".\C-xk$(_redo_selector \"\C-xy\C-h\")\C-xx\C-xr"'
 
 redo()
 {
@@ -176,6 +178,14 @@ function _domenu
       [[:graph:]]|" ") #text [a-zA-Z0-9/_?*\(\)\ .-]) 
         filter="$filter$k"
         [ "$filter" = ":q" ] && break
+        [ "$_autofilter" = y ] && [[ ! "$filter" =~ ^[0-9]+$ ]] && {
+          tput ed
+          _items_split "$filter"
+          [ ! "$_items" ] && break
+          nbitems=${#_aitems[@]}
+          [ $nbitems = 1 ] && selected="${_aitems[1]}" && break
+          _showmenu "$prompt" "$_nsel" "$nbitems" "$filter"
+        }
         _menuprompt "$prompt" "$nbitems" "$filter";;
       $'\x06') # Ctl-F => pgdn
         _select "$prompt" "_nsel+lines-1" "$nbitems" "$filter";;
@@ -210,6 +220,7 @@ function selector
   prompt="select"
   selected=""
   _maxlines=0
+  _autofilter=y
   _powerline=y
   while [ $# -gt 0 ]; do
     case "$1" in
@@ -231,6 +242,9 @@ function selector
       -F|--filter)
         [ "$2" ] && filter="$2" || return 1
         ;;
+      -a|--autofilter)
+        [ "$2" ] && _autofilter="$2" || return 1
+        ;;
       *)
         printf "usage: selector [-p <prompt>] -i <items>|-f <itemfile> [-P <y|n>]\n"
         printf "args :\n"
@@ -251,6 +265,7 @@ function selector
   stty $_stty_ori
   unset _items
   unset _maxlines
+  unset _autofilter
   [ "$selected" ] && printf "%s" "$selected" && return 0
   return 1
 }

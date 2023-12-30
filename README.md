@@ -13,8 +13,8 @@ $ source <(curl -Ls https://raw.githubusercontent.com/joknarf/redo/main/redo)
 ```
 
 Then on command line:  
-* Alt-X to access history menu
-* or pattern + Alt-X to filter and access history menu
+* Ctl-R or Alt-X to access history menu
+* or pattern + Ctl-R or Alt-X to filter and access history menu
 * in menu enter pattern to filter history
 * select command line with arrows or enter number and press enter
 * you can then edit the command line before exection
