@@ -1,5 +1,5 @@
 # redo
-bash interactive history menu
+bash interactive history menu  
 replacement for bash `Ctl-R` and `Esc+/` to search in history and re-execute/re-edit commands.
 
 ## usage
