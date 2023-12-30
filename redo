@@ -222,12 +222,6 @@ function _domenu
             _items_split "$filter"
           }
           nbitems=${#_aitems[@]}
-          [ $nbitems = 1 ] && { 
-            _menuprompt "$prompt" "$nbitems" "$filter"
-            read -rs${o}2 -t.5 k  2>/dev/null
-            selected="${_aitems[1]}"
-            break
-          }
           tput ed
           _showmenu "$prompt" "$_nsel" "$nbitems" "$filter"
         }
