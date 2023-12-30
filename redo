@@ -23,14 +23,21 @@ _redo_completions()
   [ ! "${COMPREPLY[0]}" ] && COMPREPLY=()
 }
 
+[ "$(uname -s)" = Darwin ] && _redo_lc="LC_ALL=C " || _redo_lc=""
+
 complete -F _redo_completions redo
 
+bind "set convert-meta on"
 bind '"\C-xr": redraw-current-line'
 bind '"\C-xx": shell-expand-line'
 bind '"\C-xk": backward-kill-line'
 bind '"\C-xy": yank'
-bind '"\ex": ".\C-xk$(_redo_selector \"\C-xy\C-h\")\C-xx\C-xr"'
-bind '"\C-r": ".\C-xk$(_redo_selector \"\C-xy\C-h\")\C-xx\C-xr"'
+bind '"\ex": ".\C-xk$('"$_redo_lc"'_redo_selector \"\C-xy\C-h\")\C-xx\C-xr"'
+bind '"\C-r": ".\C-xk$('"$_redo_lc"'_redo_selector \"\C-xy\C-h\")\C-xx\C-xr"'
+bind '"\e/": ".\C-xk$('"$_redo_lc"'_redo_selector \"\C-xy\C-h\")\C-xx\C-xr"'
+bind '"\M-/": ".\C-xk$('"$_redo_lc"'_redo_selector \"\C-xy\C-h\")\C-xx\C-xr"'
+
+unset _redo_lc
 
 redo()
 {
@@ -154,7 +161,8 @@ function _domenu
     case $k in
       $'\x1b')
           filter=""
-          read -rs${o}2 -t1 k
+          read -rs${o}2 -t.001 k 2>/dev/null
+          [ $? = 1 ] && read -rs${o}2 -t1 k
           case $k in 
             '[A') #up
               _select "$prompt" "_nsel-1" "$nbitems" "$filter";;
@@ -165,16 +173,20 @@ function _domenu
             '[F'|'[C') #end or arrowright
               _select "$prompt" "nbitems" "$nbitems" "$filter";;
             '[6') #pagedn [6~
-              read -rs${o}1 -t1 k
+              read -rs${o}1 -t.001 k 2>/dev/null
+              [ $? = 1 ] && read -rs${o}1 -t1 k
               _select "$prompt" "_nsel+lines-1" "$nbitems" "$filter";;
             '[5') #pageup [5~
-              read -rs${o}1 -t1 k
+              read -rs${o}1 -t.001 k 2>/dev/null
+              [ $? = 1 ] && read -rs${o}1 -t1 k
               _select "$prompt" "_nsel-lines+1" "$nbitems" "$filter";;
             *) break;;
           esac;;
       $'\x7f') #backspace
         filter=${filter%?}
         _menuprompt "$prompt" "$nbitems" "$filter";;
+      $'\xf8') #meta (macos)
+        break;;
       [[:graph:]]|" ") #text [a-zA-Z0-9/_?*\(\)\ .-]) 
         filter="$filter$k"
         [ "$filter" = ":q" ] && break
@@ -195,8 +207,11 @@ function _domenu
         _showmenu "$prompt" "$_nsel" "$nbitems" "$filter";;
       $'\x01') # Ctl-A => all
         unset _maxlines
-        _showmenu "$prompt" "$_nsel" "$nbitems" "$filter";;        
-      $'\x0d'|''|$'\n'|$'\t') #enter / tab
+        _showmenu "$prompt" "$_nsel" "$nbitems" "$filter";;
+      $'\t') # tab
+        selected="${_aitems[$_nsel]}"
+        break;;     
+      $'\x0d'|''|$'\n') #enter
         tput ed
         _items_split "$filter"
         [ ! "$_items" ] && break
@@ -216,7 +231,6 @@ function _domenu
 function selector
 {
   typeset prompt filter
-
   prompt="select"
   selected=""
   _maxlines=0
