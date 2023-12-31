@@ -6,7 +6,6 @@ type tac >/dev/null 2>&1 || alias tac='tail -r'
 
 _redo_selector()
 {
-  printf "\r" >&2
   selector -p redo -i "$(fc -n -l -1000|\
       sed -e $'s/^\t redo /\t /' -e 's/ *$//' |\
       tac|awk '
@@ -154,7 +153,9 @@ EOT
 function _domenu 
 {
   typeset prompt="$1" filter="$2" nbitems o=n
-
+  
+  printf "\r"
+  tput el
   [ "$ZSH_VERSION" ] && o=k
   _items_split "$filter"
   [ "$_items" ] || return 1
