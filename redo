@@ -216,9 +216,10 @@ function _domenu
           _items_split "$filter"
           [ ! "$_items" ] && {
             printf "Not found !"
+            tput el
             read -rs${o}4 -t.5 k 2>/dev/null
             _items="$_items_ori"
-            filter=""
+            filter="${filter%?}"
             _nsel=""
             _items_split "$filter"
           }
