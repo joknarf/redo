@@ -202,6 +202,7 @@ function _domenu
       $'\x7f') #backspace
         filter=${filter%?}
         _items="$_items_ori"
+        _nsel=""
         _items_split "$filter"
         nbitems=${#_aitems[@]}
         [ $_autofilter = y ] && _showmenu "$prompt" "$_nsel" "$nbitems" "$filter" || \
