@@ -59,7 +59,7 @@ _redo_binds()
   #bind -m vi-insert '"\C-r": "\C-xd$('"$_redo_lc"'_redo_selector)\e0i\C-xx\C-xr"'
   bind -m vi-insert '"\ex": "'"$bind_redo"'"'
   bind -m vi-insert '"\e/": "'"$bind_redo"'"'
-  bind -m vi-command '"/": "'"a$bind_redo"'"'
+  bind -m vi-command '"/": "'"A$bind_redo"'"'
 
   bind -m emacs-standard '"\C-xr": redraw-current-line'
   bind -m emacs-standard '"\C-xx": shell-expand-line'
