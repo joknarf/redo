@@ -6,13 +6,16 @@ type tac >/dev/null 2>&1 || alias tac='tail -r'
 
 _redo_selector()
 {
-  selector -p redo -i "$(fc -n -l -1000|\
+  tput el >&2
+  printf "\n" >&2  
+  selector -p redo -m 10 -i "$(fc -n -l -1000|\
       sed -e $'s/^\t redo /\t /' -e 's/ *$//' |\
       tac|awk '
         BEGIN{ done["\t"]=1 }
         $0 in done {next}
-        $0 ~ "^\t .*"w{done[$0]=1;print $0}
-      ' w="$1")" -m 10
+        $0 ~ "^\t .*"{done[$0]=1;print $0}
+      ' |grep "$1")"
+  tput cuu1 >&2
 }
 
 _redo_completions()
@@ -33,19 +36,32 @@ _redo_binds()
   bind -m vi-insert '"\C-xr": redraw-current-line'
   bind -m vi-insert '"\C-xx": shell-expand-line'
   bind -m vi-insert '"\C-xk": backward-kill-line'
-  bind -m vi-insert '"\ex": ".\C-xk$('"$_redo_lc"'_redo_selector \"\C-y\C-h\")\C-xx\C-xr"'
-  bind -m vi-insert '"\e/": ".\C-xk$('"$_redo_lc"'_redo_selector \"\C-y\C-h\")\C-xx\C-xr"'
-  bind -m vi-insert '"\C-r": ".\C-xk$('"$_redo_lc"'_redo_selector \"\C-y\C-h\")\C-xx\C-xr"'
+  bind -m vi-insert '"\C-xs": character-search'
+  bind -m vi-insert '"\C-xe": kill-line'
 
-  bind -m vi-command '"/": "a.\C-xk$('"$_redo_lc"'_redo_selector \"\C-y\C-h\")\C-xx\C-xr"'
+  # safe param quoting (takes only current line until first simple quote)
+  # - append simple quote to line
+  # - search from begin of line the simple quote
+  # - cut before simple quote
+  # - paste in param
+  # - cut after
+  # - expand line
+  bind -m vi-insert '"\C-r": "\eA'"'"'\e0i\C-xs'"'"'\C-xk$('"$_redo_lc"'_redo_selector '"'"'\C-y'"'"')\C-xe\e0i\C-xx\eA\C-xr"'
+  bind -m vi-insert '"\ex": "\C-r"'
+  bind -m vi-insert '"\e/": "\C-r"'
+  bind -m vi-command '"/": "a\C-r"'
 
   bind -m emacs-standard '"\C-xr": redraw-current-line'
   bind -m emacs-standard '"\C-xx": shell-expand-line'
   bind -m emacs-standard '"\C-xk": backward-kill-line'
-  bind -m emacs-standard '"\ex": ".\C-xk$('"$_redo_lc"'_redo_selector \"\C-y\C-h\")\C-xx\C-xr"'
-  bind -m emacs-standard '"\C-r": ".\C-xk$('"$_redo_lc"'_redo_selector \"\C-y\C-h\")\C-xx\C-xr"'
-  bind -m emacs-standard '"\e/": ".\C-xk$('"$_redo_lc"'_redo_selector \"\C-y\C-h\")\C-xx\C-xr"'
-  bind -m emacs-standard '"\M-/": ".\C-xk$('"$_redo_lc"'_redo_selector \"\C-y\C-h\")\C-xx\C-xr"'
+  bind -m emacs-standard '"\C-xs": character-search'
+  # \C-a beginning-of-line
+  # \C-e end-of-line
+  # \C-k kill-line
+  # safe param quoting (takes only current line until first simple quote)
+  bind -m emacs-standard '"\C-r": "\C-e'"'"'\C-a\C-xs'"'"'\C-xk$('"$_redo_lc"'_redo_selector '"'"'\C-y'"'"')\C-k\C-a\C-xx\C-e\C-xr"'
+  bind -m emacs-standard '"\ex": "\C-r"'
+  bind -m emacs-standard '"\e/": "\C-r"'
 
   unset _redo_lc
 }
@@ -137,7 +153,7 @@ function _items_split
 
   [ "$filter" ] && {
     _nsel=""
-    [[ "$filter" =~ ^[0-9]+$ ]] && _nsel=$filter || _items="$(printf "%s" "$_items" |egrep -- "$filter"|uniq)"
+    [[ "$filter" =~ ^[0-9]+$ ]] && _nsel=$filter || _items="$(printf "%s" "$_items" |grep -- "$filter"|uniq)"
   }
   [ "$_nsel" ] && _items="${_aitems[$_nsel]}"
   _nsel=1
@@ -153,7 +169,7 @@ EOT
 function _domenu 
 {
   typeset prompt="$1" filter="$2" nbitems o=n
-  
+
   printf "\r"
   tput el
   [ "$ZSH_VERSION" ] && o=k
