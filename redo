@@ -2,19 +2,17 @@
 # Author : Franck Jouvanceau
 #
 
-type tac >/dev/null 2>&1 || alias tac='tail -r'
-
 _redo_selector()
 {
   tput el >&2
   printf "$1\n" >&2  
-  selector -p redo -m 10 -i "$(fc -n -l -1000|\
+  selector -p redo -m 10 -i "$(fc -nr -l -1000|\
       sed -e $'s/^\t redo /\t /' -e 's/ *$//' |\
-      tac|awk '
+      awk '
         BEGIN{ done["\t"]=1 }
         $0 in done {next}
         $0 ~ "^\t .*"{done[$0]=1;print $0}
-      ' |grep "$1")"
+      ' |grep "$1")" || echo "$1"
   tput cuu1 >&2
 }
 
@@ -44,9 +42,11 @@ _redo_binds()
   # prevent expansion in filter
   # - append simple quote to line
   # - search from begin of line the simple quote
+  # - search backward simple quote (if first char)
+  # - add character "." before simple quote (for kill reset if empty)
   # - cut before simple quote
-  # - paste in param
-  # - cut after
+  # - paste in param, remove last character added
+  # - cut en of line
   # - expand line
   bind -m vi-insert '"\C-r": "\eA'"'"'\e0i\C-xs'"'"'\C-xb'"'"'.\C-xk$('"$_redo_lc"'_redo_selector '"'"'\C-y\C-h'"'"')\C-xe\e0i\C-xx\eA\C-xr"'
   #bind -m vi-insert '"\C-r": "\C-xd$('"$_redo_lc"'_redo_selector)\e0i\C-xx\C-xr"'
