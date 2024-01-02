@@ -90,14 +90,11 @@ function _ctrl_c
 
 function _menuprompt
 {
-  typeset form filter=${3:-${_aitems[$_nsel]}} nb="$_nsel/$2 "
-  [ "$3" ] && nb=""
+  typeset form filter=${3:-${_aitems[$_nsel]}} nb="$_nsel/$2 " pl=""
   printf "\r"
-  form="$1: %s%s"
-  [ "$_powerline" = "y" ] && {
-    [ "$3" ] && form="\e[30m\e[44m\e[97m $1 \e[0m\e[34m\e[44m\e[49m\e[0m %s%s" || \
-                form="\e[30m\e[44m\e[97m $1 \e[0m\e[34m\e[44m\e[100m\e[97m %s\e[0m\e[90m\e[100m\e[49m\e[0m %s"
-  }
+  #form="$1: %s%s"
+  [ "$_powerline" = "y" ] && pl=""
+  form="\e[30m\e[44m\e[97m $1 \e[0m\e[34m\e[44m\e[100m$pl\e[97m %s\e[0m\e[90m\e[100m\e[49m$pl\e[0m %s"
   printf "$form" "$nb" "$filter"
   tput el
   printf "\r"
