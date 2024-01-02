@@ -38,17 +38,23 @@ _redo_binds()
   bind -m vi-insert '"\C-xb": character-search-backward'
   bind -m vi-insert '"\C-xe": kill-line'
   bind -m vi-insert '"\C-xd": kill-whole-line'
+  bind -m vi-insert '"\C-xm": set-mark'
+  bind -m vi-insert '"\C-xc": exchange-point-and-mark'
   # safe param quoting (but take only current line until first simple quote)
   # prevent expansion in filter
   # - append simple quote to line
-  # - search from begin of line the simple quote
-  # - search backward simple quote (if first char)
-  # - add character "." before simple quote (for kill reset if empty)
+  # - add "." begin of line return begin of line
+  # - search simple quote
+  # - mark position
+  # - delete first character "." added
+  # - exchange mark
+  # - add character "." before simple quote (for kill ring if empty)
   # - cut before simple quote
   # - paste in param, remove last character added
   # - cut en of line
   # - expand line
-  bind -m vi-insert '"\C-r": "\eA'"'"'\e0i\C-xs'"'"'\C-xb'"'"'.\C-xk$('"$_redo_lc"'_redo_selector '"'"'\C-y\C-h'"'"')\C-xe\e0i\C-xx\eA\C-xr"'
+  bind -m vi-insert '"\C-r": "\eA'"'"'\eI.\eI\C-xs'"'"'\C-xm\e0xi\C-xc\ei.\C-xk$('"$_redo_lc"'_redo_selector '"'"'\C-y\C-h'"'"')\C-xe\e0i\C-xx\eA\C-xr"'
+  #bind -m vi-insert '"\C-r": "\eA'"'"'\e0i\C-xs'"'"'\C-xb'"'"'.\C-xk$('"$_redo_lc"'_redo_selector '"'"'\C-y\C-h'"'"')\C-xe\e0i\C-xx\eA\C-xr"'
   #bind -m vi-insert '"\C-r": "\C-xd$('"$_redo_lc"'_redo_selector)\e0i\C-xx\C-xr"'
   bind -m vi-insert '"\ex": "\C-r"'
   bind -m vi-insert '"\e/": "\C-r"'
@@ -64,6 +70,7 @@ _redo_binds()
   # \C-e end-of-line
   # \C-k kill-line
   # safe param quoting (takes only current line until first simple quote)
+  
   bind -m emacs-standard '"\C-r": "\C-e'"'"'\C-a\C-xs'"'"'\C-xb'"'"'.\C-xk$('"$_redo_lc"'_redo_selector '"'"'\C-y\C-h'"'"')\C-k\C-a\C-xx\C-e\C-xr"'
   bind -m emacs-standard '"\ex": "\C-r"'
   bind -m emacs-standard '"\e/": "\C-r"'
