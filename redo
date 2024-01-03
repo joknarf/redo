@@ -29,15 +29,15 @@ _redo_binds()
 {
   [ "$(uname -s)" = Darwin ] && _redo_lc="LC_ALL=C " || _redo_lc=""
 
-  bind "set convert-meta on"
+  #bind "set convert-meta on"
 
   bind -m vi-insert '"\C-xr": redraw-current-line'
   bind -m vi-insert '"\C-xx": shell-expand-line'
   bind -m vi-insert '"\C-xk": backward-kill-line'
   bind -m vi-insert '"\C-xs": character-search'
-  bind -m vi-insert '"\C-xb": character-search-backward'
+  #bind -m vi-insert '"\C-xb": character-search-backward'
   bind -m vi-insert '"\C-xe": kill-line'
-  bind -m vi-insert '"\C-xd": kill-whole-line'
+  #bind -m vi-insert '"\C-xd": kill-whole-line'
   bind -m vi-insert '"\C-xm": set-mark'
   bind -m vi-insert '"\C-xc": exchange-point-and-mark'
   # safe param quoting (but take only current line until first simple quote)
@@ -57,7 +57,8 @@ _redo_binds()
   bind -m vi-insert '"\C-r": "'"$bind_redo"'"'
   # version not taking parameter from current command line:
   #bind -m vi-insert '"\C-r": "\C-xd$('"$_redo_lc"'_redo_selector)\e0i\C-xx\C-xr"'
-  bind -m vi-insert '"\ex": "'"$bind_redo"'"'
+  
+  #bind -m vi-insert '"\ex": "'"$bind_redo"'"'
   bind -m vi-insert '"\e/": "'"$bind_redo"'"'
   bind -m vi-command '"/": "'"A$bind_redo"'"'
 
