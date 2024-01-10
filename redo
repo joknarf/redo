@@ -7,12 +7,11 @@ _redo_selector()
   tput el >&2
   printf "$1\n" >&2  
   selector -p redo -m 10 -i "$(fc -nr -l -1000|\
-      sed -e $'s/^\t redo /\t /' -e 's/ *$//' |\
       awk '
-        BEGIN{ done["\t"]=1 }
+        BEGIN{ done[""]=1 }
         $0 in done {next}
-        $0 ~ "^\t .*"{done[$0]=1;print $0}
-      ' |grep "$1")" || echo "$1"
+        {done[$0]=1;sub("\n$","");gsub("\n","\\n\001");print $0}
+      ' RS="\n\t "|grep "$1")" |awk '{gsub("\\\\n\001","\n")}1' || echo "$1"
   tput cuu1 >&2
 }
 
@@ -53,7 +52,7 @@ _redo_binds()
   # - paste in param, remove last character added
   # - cut end of line
   # - expand line
-  bind_redo='\eA'"'"'\eI.\eI\C-xs'"'"'\C-xm\e0xi\C-xc\ei.\C-xk$('"$_redo_lc"'_redo_selector '"'"'\C-y\C-h'"'"')\C-xe\eI\C-xx\eA\C-xr'
+  bind_redo='\eA'"'"'\eI.\eI\C-xs'"'"'\C-xm\e0xi\C-xc\ei.\C-xk\"$('"$_redo_lc"'_redo_selector '"'"'\C-y\C-h'"'"')\"\C-xe\eI\C-xx\eA\C-xr'
   bind -m vi-insert '"\C-r": "'"$bind_redo"'"'
   # version not taking parameter from current command line:
   #bind -m vi-insert '"\C-r": "\C-xd$('"$_redo_lc"'_redo_selector)\e0i\C-xx\C-xr"'
