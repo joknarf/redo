@@ -20,7 +20,7 @@ Then on command line:
 * select command line with arrows or enter number and press enter
 * you can then edit the command line before execution
 
-![redo](https://github.com/joknarf/redo/assets/10117818/d09f0b51-d356-462b-8738-e9b05bb68ba5)
+![demo](https://github.com/joknarf/redo/assets/10117818/cad55733-8ea0-450e-8115-b757d3b4ba9d)
 
 ## keys in menu
 
