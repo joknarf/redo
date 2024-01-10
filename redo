@@ -4,14 +4,18 @@
 
 _redo_selector()
 {
+  typeset _redo _hist
   tput el >&2
-  printf "$1\n" >&2  
-  selector -p redo -m 10 -i "$(fc -nr -l -1000|\
+  printf "$1\n" >&2
+  _hist="$(fc -nr -l -1000)"
+  _redo="$(selector -p redo -m 10 -i "$(printf "%s" "$_hist"|\
       awk '
         BEGIN{ done[""]=1 }
+        NR==1{ sub("^t ","") }
         $0 in done {next}
         {done[$0]=1;sub("\n$","");gsub("\n","\\n\001");print $0}
-      ' RS="\n\t "|grep "$1")" |awk '{gsub("\\\\n\001","\n")}1' || echo "$1"
+      ' RS="\n\t "|grep "$1")" || echo "$1" )"
+  printf "%s" "$_redo" | awk '{gsub("\\\\n\001","\n")}1'
   tput cuu1 >&2
 }
 
