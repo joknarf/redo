@@ -1,7 +1,7 @@
 # redo bash command history
 # Author : Franck Jouvanceau
 #
-
+#⏎↩↵˩┘ ┙ ┚ ┛➡➤⮠ ⮧⯈    ➡ ➢ ➣ ➤ ➥ ➦ ➧ ➨ ➩ ➪ ➫ ➽➲➔➜➝  ➞ ➟ ➠ ➡
 _redo_selector()
 {
   typeset _redo _hist
@@ -15,8 +15,8 @@ _redo_selector()
         NR==1{ sub("^\t ","") }
         $0 in done {next}
         {done[$0]=1;sub("\n$","");gsub("\n",ret);print $0}
-      ' RS="\n\t " ret='⮠ ' |grep "$1")" || echo "$1" )"
-  printf "%s" "$_redo" | awk '{gsub(ret,"\n")}1' ret='⮠ '
+      ' RS="\n\t " ret='↵ ' |grep "$1")" || echo "$1" )"
+  printf "%s" "$_redo" | awk '{gsub(ret,"\n")}1' ret='↵ '
   tput cuu1 >&2
 }
 
