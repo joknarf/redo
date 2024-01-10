@@ -7,8 +7,8 @@ _redo_selector()
   typeset _redo _hist
   tput el >&2
   printf "$1\n" >&2
-  _hist="$(fc -lnr -1000|cat)" # missing last cmd without pipe
-  [ "$_hist" ] || _hist="$(fc -lnr -1000)" # bug bash 4.1.2 with multiline last command
+  _hist="$(fc -lnr -0 -1000|cat)" # missing last cmd without pipe on bash 4.1.2
+  [ "$_hist" ] || _hist="$(fc -lnr -0 -1000)" # bug bash 4.1.2 with multiline last command
   _redo="$(selector -p redo -m 10 -i "$(printf "%s" "$_hist"|\
       awk '
         BEGIN{ done[""]=1 }
@@ -31,17 +31,16 @@ _redo_completions()
 
 _redo_binds()
 {
+  typeset _redo_lc redo_bind
+  [ -t 1 ] || return
+  [[ ! -o emacs ]] && [[ ! -o vi ]] && set -o emacs
   [ "$(uname -s)" = Darwin ] && _redo_lc="LC_ALL=C " || _redo_lc=""
-
-  #bind "set convert-meta on"
 
   bind -m vi-insert '"\C-xr": redraw-current-line'
   bind -m vi-insert '"\C-xx": shell-expand-line'
   bind -m vi-insert '"\C-xk": backward-kill-line'
   bind -m vi-insert '"\C-xs": character-search'
-  #bind -m vi-insert '"\C-xb": character-search-backward'
   bind -m vi-insert '"\C-xe": kill-line'
-  #bind -m vi-insert '"\C-xd": kill-whole-line'
   bind -m vi-insert '"\C-xm": set-mark'
   bind -m vi-insert '"\C-xc": exchange-point-and-mark'
   # safe param quoting (but take only current line until first simple quote)
