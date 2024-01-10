@@ -7,11 +7,12 @@ _redo_selector()
   typeset _redo _hist
   tput el >&2
   printf "$1\n" >&2
-  _hist="$(fc -nr -l -1000)"
+  _hist="$(fc -lnr -1000|cat)" # missing last cmd without pipe
+  [ "$_hist" ] || _hist="$(fc -lnr -1000)" # bug bash 4.1.2 with multiline last command
   _redo="$(selector -p redo -m 10 -i "$(printf "%s" "$_hist"|\
       awk '
         BEGIN{ done[""]=1 }
-        NR==1{ sub("^t ","") }
+        NR==1{ sub("^\t ","") }
         $0 in done {next}
         {done[$0]=1;sub("\n$","");gsub("\n","\\n\001");print $0}
       ' RS="\n\t "|grep "$1")" || echo "$1" )"
