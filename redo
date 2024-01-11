@@ -167,7 +167,7 @@ function _items_split
 
   [ "$filter" ] && {
     _nsel=""
-    [[ "$filter" =~ ^[0-9]+$ ]] && _nsel=$filter || _items="$(printf "%s" "$_items" |grep -- "$filter"|uniq)"
+    [[ "$filter" =~ ^[0-9]+$ ]] && _nsel=$filter || _items="$(printf "%s" "$_items" |grep -- "$filter" 2>/dev/null|uniq)"
   }
   [ "$_nsel" ] && _items="${_aitems[$_nsel]}"
   _nsel=1
