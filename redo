@@ -28,6 +28,14 @@ _redo_del()
   do
     history -d $i
   done
+  awk '{
+    gsub(ret,"\n",todel)
+    print todel >"/tmp/tod"
+    while (ind = index($0, todel)) {
+      print(substr($0, 1, ind))
+      $0 = substr($0, ind+length(todel))
+    }
+  }1' ret='↵ ' RS='\003' ORS='' todel="\n${todel//\\/\\\\}\n" ${HISTFILE:=~/.bash_history} >~/.bash_history.tmp && mv ~/.bash_history.tmp ${HISTFILE:=~/.bash_history} 
 }
 
 redodel()
