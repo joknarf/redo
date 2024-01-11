@@ -221,12 +221,12 @@ function _readkey
     [ "$key" = $'\x1b' ] && key="" && while true
     do
       k=""
-      read -rs${o}1 -t.001 k 2>/dev/null
-      [ $? = 1 ] && read -rs${o}1 -t1 k # old bash
+      read -rs${o}1 -t 0.001 k 2>/dev/null
+      [ $? = 1 ] && [ ! "$ZSH_VERSION" ] && read -rs${o}1 -t 1 k # old bash
       [ ! "$k" ] && key=${key:-$'\x1b'} && break
       key+="$k"
       case "$key" in
-      '['[A-H]|'['*'~'|O[P-S]|'[1;2'[P-S]) break;;  
+      '['[A-H]|'['*'~'|O[A-S]|'[1;2'[P-S]) break;;  
       esac
     done
     printf "%s" "$key"
@@ -259,13 +259,13 @@ function _domenu
   do
     k=$(_readkey $o)
     case $k in
-      '[A') #up
+      '[A'|OA) #up
         filter="";_select "$prompt" "_nsel-1" "$nbitems" "$filter";;
-      '[B') #down
+      '[B'|OB) #down
         filter="";_select "$prompt" "_nsel+1" "$nbitems" "$filter";;
-      '[H'|'[D') #home or arrowleft
+      '[H'|'[D'|OD) #home or arrowleft
         filter="";_select "$prompt" "1" "$nbitems" "$filter";;
-      '[F'|'[C') #end or arrowright
+      '[F'|'[C'|OC) #end or arrowright
         filter="";_select "$prompt" "nbitems" "$nbitems" "$filter";;
       '[6~'|$'\x06') #pagedn Ctl-F
         filter="";_select "$prompt" "_nsel+lines-1" "$nbitems" "$filter";;
@@ -297,7 +297,7 @@ function _domenu
           [ ! "$_items" ] && {
             printf "Not found !"
             tput el
-            read -rs${o}4 -t.5 k 2>/dev/null
+            read -rs${o}4 -t 0.5 k 2>/dev/null
             _items="$_items_ori"
             filter="${filter%?}"
             _nsel=""
