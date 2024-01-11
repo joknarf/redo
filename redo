@@ -152,7 +152,7 @@ function _ctrl_c
 
 function _menuprompt
 {
-  typeset form filter=${3:-${_aitems[$_nsel]}} nb="$_nsel/$2 " pl=""
+  typeset form filter="${3:-${_aitems[$_nsel]}}" nb="$_nsel/$2 " pl=""
   printf "\r"
   #form="$1: %s%s"
   [ "$_powerline" = "y" ] && pl=""
