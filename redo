@@ -271,7 +271,7 @@ function _domenu
         filter="";_select "$prompt" "_nsel+lines-1" "$nbitems" "$filter";;
       '[5~'|$'\x02') #pageup Ctl-B
         filter="";_select "$prompt" "_nsel-lines+1" "$nbitems" "$filter";;
-      '[19~') # F8 delete
+      '[19~'|$'\x04') # F8 Ctl-D delete
         [ "$_delfunc" ] && $_delfunc "${_aitems[$_nsel]}"
         unset "_aitems[$_nsel]"
         _aitems=(_ "${_aitems[@]}")
