@@ -407,5 +407,5 @@ function selector
 }
 
 [[ "$LANG" = *UTF-8 ]] && __selector_lc="$LANG" || {
-    type locale 2>/dev/null && locale -a |grep -q "en_US.UTF-8" && __selector_lc=en_US.UTF-8 || __selector_lc=C.UTF-8
+    type locale >/dev/null 2>/dev/null && locale -a |grep -iq "en_US.UTF-*8" && __selector_lc=en_US.UTF-8 || __selector_lc=C.UTF-8
 }
