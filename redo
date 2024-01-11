@@ -208,11 +208,11 @@ function _readkey
       k=""
       read -rs${o}1 -t.001 k 2>/dev/null
       [ $? = 1 ] && read -rs${o}1 -t1 k # old bash
+      [ ! "$k" ] && key=${key:-$'\x1b'} && break
+      key+="$k"
       case "$key" in
       '['[A-H]|'['*'~') break;;  
       esac
-      [ ! "$k" ] && key=${key:-$'\x1b'} && break
-      key+="$k"
     done
     printf "%s" "$key"
 }
