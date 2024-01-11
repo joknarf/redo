@@ -1,21 +1,40 @@
 # redo bash command history
 # Author : Franck Jouvanceau
 #
+redodel()
+{
+  typeset todel="$1" i
+  tput cuu1 >&2
+  while true
+  do
+    todel="$(_redo_selector)"
+    [ "$todel" ] || return
+    _hist="$( (fc -lr -0 -1000) )" # missing last cmd without subshell on bash <4.4
+    [ "$_hist" ] || _hist="$(fc -lr -1000)" # bug bash <4.4 with multiline last command
+    for i in $(printf "%s" "$_hist"|\
+        awk '
+          $0==todel {gsub("^\n|\t $","",prevrt);print prevrt }
+          {prevrt=RT}
+        ' RS="\n*[0-9]+\t " ret='↵ ' todel="${todel//\\/\\\\}")
+    do
+      history -d $i
+    done
+  done
+}
 
 _redo_selector()
 {
   typeset _redo _hist
   tput el >&2
-  printf "$1\n" >&2
-  _hist="$( (fc -lnr -0 -1000) )" # missing last cmd without subshell on bash <4.4
-  [ "$_hist" ] || _hist="$(fc -lnr -1000)" # bug bash <4.4 with multiline last command
-  _redo="$(selector -p redo -m 10 -i "$(printf "%s" "$_hist"|\
+  printf "%s\n" "$1" >&2
+  _hist="$( (fc -lr -0 -1000) )" # missing last cmd without subshell on bash <4.4
+  [ "$_hist" ] || _hist="$(fc -lr -1000)" # bug bash <4.4 with multiline last command
+  _redo="$(selector -p redo -m 10 -d _redo_del -i "$(printf "%s" "$_hist"|\
       awk '
         BEGIN{ done[""]=1 }
-        NR==1{ sub("^\t ","") }
         $0 in done {next}
         {done[$0]=1;sub("\n$","");gsub("\n",ret);print $0}
-      ' RS="\n\t " ret='↵ ' |grep "$1")" || echo "$1" )"
+      ' RS="\n*[0-9]+\t " ret='↵ ' |grep "$1")" || printf "%s" "$1")"
   printf "%s" "$_redo" | awk '{gsub(ret,"\n")}1' ret='↵ '
   tput cuu1 >&2
 }
@@ -172,12 +191,26 @@ function _items_split
   [ "$_nsel" ] && _items="${_aitems[$_nsel]}"
   _nsel=1
   unset _aitems
-  while read -r item;do
+  while IFS= read -r item;do
     _aitems[$i]="$item"
     i=$((i+1))
   done <<EOT
 $_items
 EOT
+}
+
+function _readkey
+{
+    typeset o=${1:-n}
+    IFS= read -rs${o}1 key
+    [ "$key" = $'\x1b' ] && key="" && while true
+    do
+      read -rs${o}1 -t.001 k 2>/dev/null
+      [ $? = 1 ] && read -rs${o}1 -t1 k # old bash
+      [ ! "$k" ] && key=${key:-$'\x1b'} && break
+      key+="$k"
+    done
+    printf "%s" "$key"
 }
 
 function _domenu 
@@ -205,31 +238,28 @@ function _domenu
   _showmenu "$prompt" "$_nsel" "$nbitems" ""
   while true
   do
-    IFS= read -rs${o}1 k
+    k=$(_readkey $o)
     case $k in
-      $'\x1b')
-          filter=""
-          read -rs${o}2 -t.001 k 2>/dev/null
-          [ $? = 1 ] && read -rs${o}2 -t1 k
-          case $k in 
-            '[A') #up
-              _select "$prompt" "_nsel-1" "$nbitems" "$filter";;
-            '[B') #down
-              _select "$prompt" "_nsel+1" "$nbitems" "$filter";;
-            '[H'|'[D') #home or arrowleft
-              _select "$prompt" "1" "$nbitems" "$filter";;
-            '[F'|'[C') #end or arrowright
-              _select "$prompt" "nbitems" "$nbitems" "$filter";;
-            '[6') #pagedn [6~
-              read -rs${o}1 -t.001 k 2>/dev/null
-              [ $? = 1 ] && read -rs${o}1 -t1 k
-              _select "$prompt" "_nsel+lines-1" "$nbitems" "$filter";;
-            '[5') #pageup [5~
-              read -rs${o}1 -t.001 k 2>/dev/null
-              [ $? = 1 ] && read -rs${o}1 -t1 k
-              _select "$prompt" "_nsel-lines+1" "$nbitems" "$filter";;
-            *) break;;
-          esac;;
+      '[A') #up
+        filter="";_select "$prompt" "_nsel-1" "$nbitems" "$filter";;
+      '[B') #down
+        filter="";_select "$prompt" "_nsel+1" "$nbitems" "$filter";;
+      '[H'|'[D') #home or arrowleft
+        filter="";_select "$prompt" "1" "$nbitems" "$filter";;
+      '[F'|'[C') #end or arrowright
+        filter="";_select "$prompt" "nbitems" "$nbitems" "$filter";;
+      '[6~'|$'\x06') #pagedn Ctl-F
+        filter="";_select "$prompt" "_nsel+lines-1" "$nbitems" "$filter";;
+      '[5~'|$'\x02') #pageup Ctl-B
+        filter="";_select "$prompt" "_nsel-lines+1" "$nbitems" "$filter";;
+      '[19~') # F8 delete
+        filter=""
+        unset "_aitems[$_nsel]"
+        _aitems=(_ "${_aitems[@]}")
+        unset '_aitems[0]'
+        nbitems=${#_aitems[@]}
+        tput ed
+        _showmenu "$prompt" "$_nsel" "$nbitems" "$filter";;
       $'\x7f') #backspace
         filter=${filter%?}
         _items="$_items_ori"
@@ -259,15 +289,16 @@ function _domenu
           _showmenu "$prompt" "$_nsel" "$nbitems" "$filter"
         }
         _menuprompt "$prompt" "$nbitems" "$filter";;
-      $'\x06') # Ctl-F => pgdn
-        _select "$prompt" "_nsel+lines-1" "$nbitems" "$filter";;
-      $'\x02') # Ctl-B => pgup
-        _select "$prompt" "_nsel-lines+1" "$nbitems" "$filter";;
       $'\x0c') # Ctl-L => refresh
         _showmenu "$prompt" "$_nsel" "$nbitems" "$filter";;
       $'\x01') # Ctl-A => all
         unset _maxlines
         _showmenu "$prompt" "$_nsel" "$nbitems" "$filter";;
+      $'\x05') # Ctl-E purge
+      echo "=>";sleep 0.5
+        selected="${_aitems[$_nsel]}"
+        _purge=1
+        break;;
       $'\x0d'|''|$'\n') # enter
         [[ "$filter" =~ ^[0-9]+$ ]] && selected="${_aitems[$filter]}" || selected="${_aitems[$_nsel]}"
         break;;     
@@ -280,7 +311,7 @@ function _domenu
         filter=""
         tput ed
         _showmenu "$prompt" "$_nsel" "$nbitems" "$filter";;
-      *) break;
+      *) printf "%s" "$k" >/tmp/o;break;
     esac
   done
   unset _nsel
@@ -322,6 +353,9 @@ function selector
       -a|--autofilter)
         [ "$2" ] && _autofilter="$2" || return 1
         ;;
+      -d|--deletefunc)
+        [ "$2" ] && _delfunc="$2" || return 1
+        ;;
       *)
         printf "usage: selector [-p <prompt>] -i <items>|-f <itemfile> [-P <y|n>]\n"
         printf "args :\n"
@@ -336,6 +370,7 @@ function selector
     shift 2
   done
   _stty_ori=$(stty -g)
+  _purge=""
   trap _ctrl_c INT
   LC_ALL=$__selector_lc _domenu "$prompt" "$filter" >&2
   trap - INT
@@ -343,7 +378,11 @@ function selector
   unset _items
   unset _maxlines
   unset _autofilter
-  [ "$selected" ] && printf "%s" "$selected" && return 0
+  [ "$selected" ] && {
+    printf "%s" "$selected"
+    [ "$_purge" ] && return 111
+    return 0
+  }
   return 1
 }
 
