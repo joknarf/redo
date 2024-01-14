@@ -4,14 +4,16 @@
 _get_hist()
 {
   typeset _hist
-
-  _hist="$( (fc -lr -0 -1000) )" # missing last cmd without subshell on bash <4.4
-  [ "$_hist" ] || _hist="$(fc -lr -1000)" # bug bash <4.4 with multiline last command
+  [ "$BASH" ] && {
+    _hist="$( (fc -lnr -0 -1000) )" # missing last cmd without subshell on bash <4.4
+    [ "$_hist" ] || _hist="$(fc -lnr -1000)" # bug bash <4.4 with multiline last command
+  }
+  [ "$ZSH_VERSION" ] && _hist=$(printf "\t %s\n" "${history[@]}")
   printf "%s" "$_hist"| awk '
       BEGIN{ done[""]=1 }
       $0 in done {next}
       {done[$0]=1;sub("\n$","");gsub("\n",ret);print $0}
-    ' RS="\n*[0-9]+\t " ret='↵ '  
+    ' RS="\n*+\t " ret='↵ '  
 }
 
 _redo_del()
@@ -54,6 +56,13 @@ _redo_selector()
   tput cuu1 >&2
 }
 
+_redow() {
+  BUFFER=$(_redo_selector "$BUFFER")
+  zle -Rc
+  zle end-of-line
+  zle vi-insert
+}
+
 _redo_completions()
 {
   [ ${#COMP_WORDS[@]} -gt 2 ] && return
@@ -68,53 +77,57 @@ _redo_binds()
   typeset redo_bind
   [ -t 1 ] || return
   [[ ! -o emacs ]] && [[ ! -o vi ]] && set -o emacs
+  [ "$BASH" ] && {
+    bind -m vi-insert '"\C-xr": redraw-current-line'
+    bind -m vi-insert '"\C-xx": shell-expand-line'
+    bind -m vi-insert '"\C-xk": backward-kill-line'
+    bind -m vi-insert '"\C-xs": character-search'
+    bind -m vi-insert '"\C-xe": kill-line'
+    bind -m vi-insert '"\C-xm": set-mark'
+    bind -m vi-insert '"\C-xc": exchange-point-and-mark'
+    # safe param quoting (but take only current line until first simple quote)
+    # prevent expansion in filter / bell ring
+    # - append simple quote to line
+    # - add "." begin of line return begin of line
+    # - search simple quote
+    # - mark position
+    # - delete first character "." added
+    # - exchange mark
+    # - add character "." before simple quote (for kill ring if empty)
+    # - cut before simple quote
+    # - paste in param, remove last character added
+    # - cut end of line
+    # - expand line
+    bind_redo='\eA'"'"'\eI.\eI\C-xs'"'"'\C-xm\e0xi\C-xc\ei.\C-xk\"$(_redo_selector '"'"'\C-y\C-h'"'"')\"\C-xe\eI\C-xx\eA\C-xr'
+    bind -m vi-insert '"\C-r": "'"$bind_redo"'"'
+    # version not taking parameter from current command line:
+    #bind -m vi-insert '"\C-r": "\C-xd$(_redo_selector)\e0i\C-xx\C-xr"'
+    
+    #bind -m vi-insert '"\ex": "'"$bind_redo"'"'
+    bind -m vi-insert '"\e/": "'"$bind_redo"'"'
+    bind -m vi-command '"/": "'"A$bind_redo"'"'
 
-  bind -m vi-insert '"\C-xr": redraw-current-line'
-  bind -m vi-insert '"\C-xx": shell-expand-line'
-  bind -m vi-insert '"\C-xk": backward-kill-line'
-  bind -m vi-insert '"\C-xs": character-search'
-  bind -m vi-insert '"\C-xe": kill-line'
-  bind -m vi-insert '"\C-xm": set-mark'
-  bind -m vi-insert '"\C-xc": exchange-point-and-mark'
-  # safe param quoting (but take only current line until first simple quote)
-  # prevent expansion in filter / bell ring
-  # - append simple quote to line
-  # - add "." begin of line return begin of line
-  # - search simple quote
-  # - mark position
-  # - delete first character "." added
-  # - exchange mark
-  # - add character "." before simple quote (for kill ring if empty)
-  # - cut before simple quote
-  # - paste in param, remove last character added
-  # - cut end of line
-  # - expand line
-  bind_redo='\eA'"'"'\eI.\eI\C-xs'"'"'\C-xm\e0xi\C-xc\ei.\C-xk\"$(_redo_selector '"'"'\C-y\C-h'"'"')\"\C-xe\eI\C-xx\eA\C-xr'
-  bind -m vi-insert '"\C-r": "'"$bind_redo"'"'
-  # version not taking parameter from current command line:
-  #bind -m vi-insert '"\C-r": "\C-xd$(_redo_selector)\e0i\C-xx\C-xr"'
-  
-  #bind -m vi-insert '"\ex": "'"$bind_redo"'"'
-  bind -m vi-insert '"\e/": "'"$bind_redo"'"'
-  bind -m vi-command '"/": "'"A$bind_redo"'"'
+    bind -m emacs-standard '"\C-xr": redraw-current-line'
+    bind -m emacs-standard '"\C-xx": shell-expand-line'
+    bind -m emacs-standard '"\C-xk": backward-kill-line'
+    bind -m emacs-standard '"\C-xs": character-search'
+    #bind -m emacs-standard '"\C-xb": character-search-backward'
+    bind -m emacs-standard '"\C-xd": delete-char'
+    bind -m emacs-standard '"\C-xm": set-mark'
+    bind -m emacs-standard '"\C-xc": exchange-point-and-mark'
+    # \C-a beginning-of-line
+    # \C-e end-of-line
+    # \C-k kill-line
+    # safe param quoting (takes only current line until first simple quote)
 
-  bind -m emacs-standard '"\C-xr": redraw-current-line'
-  bind -m emacs-standard '"\C-xx": shell-expand-line'
-  bind -m emacs-standard '"\C-xk": backward-kill-line'
-  bind -m emacs-standard '"\C-xs": character-search'
-  #bind -m emacs-standard '"\C-xb": character-search-backward'
-  bind -m emacs-standard '"\C-xd": delete-char'
-  bind -m emacs-standard '"\C-xm": set-mark'
-  bind -m emacs-standard '"\C-xc": exchange-point-and-mark'
-  # \C-a beginning-of-line
-  # \C-e end-of-line
-  # \C-k kill-line
-  # safe param quoting (takes only current line until first simple quote)
-
-  bind -m emacs-standard '"\C-r": "\C-e'"'"'\C-a.\C-a\C-xs'"'"'\C-xm\C-a\C-xd\C-xc\C-b.\C-xk$(_redo_selector '"'"'\C-y\C-h'"'"')\C-k\C-a\C-xx\C-e\C-xr"'  
-  bind -m emacs-standard '"\ex": "\C-r"'
-  bind -m emacs-standard '"\e/": "\C-r"'
-
+    bind -m emacs-standard '"\C-r": "\C-e'"'"'\C-a.\C-a\C-xs'"'"'\C-xm\C-a\C-xd\C-xc\C-b.\C-xk$(_redo_selector '"'"'\C-y\C-h'"'"')\C-k\C-a\C-xx\C-e\C-xr"'  
+    bind -m emacs-standard '"\ex": "\C-r"'
+    bind -m emacs-standard '"\e/": "\C-r"'
+  }
+  [ "$ZSH_VERSION" ] && {
+      zle -N _redow
+      bindkey -M vicmd '/' _redow
+  }
 }
 
 redo()
@@ -123,7 +136,7 @@ redo()
 }
 
 _redo_binds
-complete -F _redo_completions redo
+[ "$BASH" ] && complete -F _redo_completions redo
 
 # selector from https://ghithub.com/joknarf/selector
 
@@ -250,7 +263,7 @@ function _domenu
   _items_ori="$_items"
   filter=""
   tput civis
-  stty -echo
+  stty -echo 2>/dev/null
   printf "\e[?7l" # nowrap
   : ${LINES:=$(tput lines)}
   [ "$_maxlines" -gt 2 ] || unset _maxlines
@@ -389,12 +402,12 @@ function selector
     esac
     shift 2
   done
-  _stty_ori=$(stty -g)
+  _stty_ori=$(stty -g 2>/dev/null)
   _purge=""
   trap _ctrl_c INT
   LC_ALL=$__selector_lc _domenu "$prompt" "$filter" >&2
   trap - INT
-  stty $_stty_ori
+  stty $_stty_ori 2>/dev/null
   unset _items
   unset _maxlines
   unset _autofilter
