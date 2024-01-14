@@ -287,8 +287,8 @@ function _domenu
       '[19~'|$'\x04') # F8 Ctl-D delete
         [ "$_delfunc" ] && $_delfunc "${_aitems[$_nsel]}"
         unset "_aitems[$_nsel]"
-        _aitems=(_ "${_aitems[@]}")
-        unset '_aitems[0]'
+        [ "$BASH" ] && _aitems=(_ "${_aitems[@]}") && unset '_aitems[0]' ||\
+          _aitems=("${(@)_aitems[1,$_nsel-1]}" "${(@)_aitems[$_nsel+1,$nbitems]}")
         nbitems=${#_aitems[@]}
         tput ed
         filter="";_select "$prompt" "$_nsel" "$nbitems" "$filter";;
