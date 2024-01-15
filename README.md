@@ -1,6 +1,6 @@
 # redo
-bash interactive history menu  
-replacement for bash `Ctl-R` and `Esc+/` to search in history and re-execute/re-edit commands.
+bash/zsh interactive history menu  
+replacement for bash/zsh `Ctl-R` and `Esc+/` to search in history and re-execute/re-edit commands.
 
 ## usage
 
@@ -36,6 +36,18 @@ Then on command line:
 |Ctl-A     | use all screen to display menu  |
 |Enter     | validate selected item          |
 |Tab       | apply filter/new filter         |
+|Del-F8    | Delete item from history file   |
 
 * filter pattern can be applied entering text (ext regexp)
 * selection can be done entering item number
+
+## delete history
+
+Using Del/F8 when using bind key (`Esc-/` `Ctl-R`) will not remove command from current shell history (line editing limitation), but the HISTFILE will be purged from the command.  
+To delete from current shell history use `redodel` then chose command and press Del.
+
+* zsh options to set : 
+  * `setopt appendhistory`
+  * `setopt incappendhistory`
+* ubuntu specific, in vi mode need to put in `~/.zshenv` to have `Esc-/` correctly binded:
+  * `skip_global_compinit=1`
