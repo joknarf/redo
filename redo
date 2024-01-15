@@ -43,7 +43,8 @@ _redo_del()
       history -d $i
     done
   }
-  [ "$ZSH_VERSION" ] && \fc -p $HISTFILE $HISTSIZE $SAVEHIST
+  # use setopt appendhistory + setopt incappendhistory
+  [ "$ZSH_VERSION" ] && builtin fc -p $HISTFILE $HISTSIZE $SAVEHIST #not working in zle call
 }
 
 redodel()
@@ -64,6 +65,7 @@ _redo_selector()
 
 _redow() {
   BUFFER=$(_redo_selector "$BUFFER")
+  #zle reset-prompt
   zle -Rc
   zle end-of-line
   zle vi-insert
