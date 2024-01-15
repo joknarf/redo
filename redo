@@ -1,23 +1,74 @@
 # redo bash command history
 # Author : Franck Jouvanceau
 #
+_get_hist()
+{
+  typeset _hist
+  [ "$BASH" ] && {
+    _hist="$( (fc -lnr -0 -1000) )" # missing last cmd without subshell on bash <4.4
+    [ "$_hist" ] || _hist="$(fc -lnr -1000)" # bug bash <4.4 with multiline last command
+  }
+  [ "$ZSH_VERSION" ] && _hist=$(printf "\t %s\n" "${history[@]}")
+  printf "%s" "$_hist"| awk '
+      BEGIN{ done[""]=1 }
+      $0 in done {next}
+      {done[$0]=1;sub("\n$","");gsub("\n",ret);print $0}
+    ' RS="\n*+\t " ret='↵ '  
+}
+
+_redo_del()
+{
+  typeset todel="$1" i _hist
+  [ "$todel" ] || return
+
+  # remove from HISTFILE
+  awk '{
+    if (b) gsub(ret,"\n",todel)
+    else gsub(ret, "\\\n",todel)
+    while (ind = index($0, todel)) {
+      print(substr($0, 1, ind))
+      $0 = substr($0, ind+length(todel))
+    }
+  }1' ret='↵ ' RS='\003' ORS='' b="$BASH" todel="\n${todel//\\/\\\\}\n" "${HISTFILE:=~/.bash_history}" >~/.redo_history.tmp && mv ~/.redo_history.tmp "${HISTFILE:=~/.bash_history}" 
+
+  [ "$BASH" ] && {
+    _hist="$( (fc -lr -0 -1000) )" # missing last cmd without subshell on bash <4.4
+    [ "$_hist" ] || _hist="$(fc -lr -1000)" # bug bash <4.4 with multiline last command
+    for i in $(printf "%s" "$_hist"| awk '
+          {sub("\n$","");gsub("\n",ret)}
+          $0==todel {gsub("^\n|\t $","",prevrt);print prevrt }
+          {prevrt=RT}
+        ' RS="\n*[0-9]+\t " ret='↵ ' todel="${todel//\\/\\\\}")
+    do
+      history -d $i
+    done
+  }
+  # use setopt appendhistory + setopt incappendhistory
+  [ "$ZSH_VERSION" ] && builtin fc -p $HISTFILE $HISTSIZE $SAVEHIST #not working in zle call
+}
+
+redodel()
+{
+  tput cuu1 >&2
+  selector -p redodel -m 10 -d _redo_del -i "$(_get_hist)"
+}
 
 _redo_selector()
 {
   typeset _redo _hist
   tput el >&2
-  printf "$1\n" >&2
-  _hist="$( (fc -lnr -0 -1000) )" # missing last cmd without subshell on bash <4.4
-  [ "$_hist" ] || _hist="$(fc -lnr -1000)" # bug bash <4.4 with multiline last command
-  _redo="$(selector -p redo -m 10 -i "$(printf "%s" "$_hist"|\
-      awk '
-        BEGIN{ done[""]=1 }
-        NR==1{ sub("^\t ","") }
-        $0 in done {next}
-        {done[$0]=1;sub("\n$","");gsub("\n",ret);print $0}
-      ' RS="\n\t " ret='↵ ' |grep "$1")" || echo "$1" )"
+  printf "%s\n" "$1" >&2
+  _redo="$(selector -p redo -m 10 -d _redo_del -i "$(_get_hist |grep "$1")" || printf "%s" "$1")"
   printf "%s" "$_redo" | awk '{gsub(ret,"\n")}1' ret='↵ '
   tput cuu1 >&2
+}
+
+_redow() {
+  BUFFER=$(_redo_selector "$BUFFER")
+  #zle reset-prompt
+  zle -Rc
+  zle end-of-line
+  zle vi-insert
 }
 
 _redo_completions()
@@ -34,53 +85,61 @@ _redo_binds()
   typeset redo_bind
   [ -t 1 ] || return
   [[ ! -o emacs ]] && [[ ! -o vi ]] && set -o emacs
+  [ "$BASH" ] && {
+    bind -m vi-insert '"\C-xr": redraw-current-line'
+    bind -m vi-insert '"\C-xx": shell-expand-line'
+    bind -m vi-insert '"\C-xk": backward-kill-line'
+    bind -m vi-insert '"\C-xs": character-search'
+    bind -m vi-insert '"\C-xe": kill-line'
+    bind -m vi-insert '"\C-xm": set-mark'
+    bind -m vi-insert '"\C-xc": exchange-point-and-mark'
+    # safe param quoting (but take only current line until first simple quote)
+    # prevent expansion in filter / bell ring
+    # - append simple quote to line
+    # - add "." begin of line return begin of line
+    # - search simple quote
+    # - mark position
+    # - delete first character "." added
+    # - exchange mark
+    # - add character "." before simple quote (for kill ring if empty)
+    # - cut before simple quote
+    # - paste in param, remove last character added
+    # - cut end of line
+    # - expand line
+    bind_redo='\eA'"'"'\eI.\eI\C-xs'"'"'\C-xm\e0xi\C-xc\ei.\C-xk\"$(_redo_selector '"'"'\C-y\C-h'"'"')\"\C-xe\eI\C-xx\eA\C-xr'
+    bind -m vi-insert '"\C-r": "'"$bind_redo"'"'
+    # version not taking parameter from current command line:
+    #bind -m vi-insert '"\C-r": "\C-xd$(_redo_selector)\e0i\C-xx\C-xr"'
+    
+    #bind -m vi-insert '"\ex": "'"$bind_redo"'"'
+    bind -m vi-insert '"\e/": "'"$bind_redo"'"'
+    bind -m vi-command '"/": "'"A$bind_redo"'"'
 
-  bind -m vi-insert '"\C-xr": redraw-current-line'
-  bind -m vi-insert '"\C-xx": shell-expand-line'
-  bind -m vi-insert '"\C-xk": backward-kill-line'
-  bind -m vi-insert '"\C-xs": character-search'
-  bind -m vi-insert '"\C-xe": kill-line'
-  bind -m vi-insert '"\C-xm": set-mark'
-  bind -m vi-insert '"\C-xc": exchange-point-and-mark'
-  # safe param quoting (but take only current line until first simple quote)
-  # prevent expansion in filter / bell ring
-  # - append simple quote to line
-  # - add "." begin of line return begin of line
-  # - search simple quote
-  # - mark position
-  # - delete first character "." added
-  # - exchange mark
-  # - add character "." before simple quote (for kill ring if empty)
-  # - cut before simple quote
-  # - paste in param, remove last character added
-  # - cut end of line
-  # - expand line
-  bind_redo='\eA'"'"'\eI.\eI\C-xs'"'"'\C-xm\e0xi\C-xc\ei.\C-xk\"$(_redo_selector '"'"'\C-y\C-h'"'"')\"\C-xe\eI\C-xx\eA\C-xr'
-  bind -m vi-insert '"\C-r": "'"$bind_redo"'"'
-  # version not taking parameter from current command line:
-  #bind -m vi-insert '"\C-r": "\C-xd$(_redo_selector)\e0i\C-xx\C-xr"'
-  
-  #bind -m vi-insert '"\ex": "'"$bind_redo"'"'
-  bind -m vi-insert '"\e/": "'"$bind_redo"'"'
-  bind -m vi-command '"/": "'"A$bind_redo"'"'
+    bind -m emacs-standard '"\C-xr": redraw-current-line'
+    bind -m emacs-standard '"\C-xx": shell-expand-line'
+    bind -m emacs-standard '"\C-xk": backward-kill-line'
+    bind -m emacs-standard '"\C-xs": character-search'
+    #bind -m emacs-standard '"\C-xb": character-search-backward'
+    bind -m emacs-standard '"\C-xd": delete-char'
+    bind -m emacs-standard '"\C-xm": set-mark'
+    bind -m emacs-standard '"\C-xc": exchange-point-and-mark'
+    # \C-a beginning-of-line
+    # \C-e end-of-line
+    # \C-k kill-line
+    # safe param quoting (takes only current line until first simple quote)
 
-  bind -m emacs-standard '"\C-xr": redraw-current-line'
-  bind -m emacs-standard '"\C-xx": shell-expand-line'
-  bind -m emacs-standard '"\C-xk": backward-kill-line'
-  bind -m emacs-standard '"\C-xs": character-search'
-  #bind -m emacs-standard '"\C-xb": character-search-backward'
-  bind -m emacs-standard '"\C-xd": delete-char'
-  bind -m emacs-standard '"\C-xm": set-mark'
-  bind -m emacs-standard '"\C-xc": exchange-point-and-mark'
-  # \C-a beginning-of-line
-  # \C-e end-of-line
-  # \C-k kill-line
-  # safe param quoting (takes only current line until first simple quote)
-
-  bind -m emacs-standard '"\C-r": "\C-e'"'"'\C-a.\C-a\C-xs'"'"'\C-xm\C-a\C-xd\C-xc\C-b.\C-xk$(_redo_selector '"'"'\C-y\C-h'"'"')\C-k\C-a\C-xx\C-e\C-xr"'  
-  bind -m emacs-standard '"\ex": "\C-r"'
-  bind -m emacs-standard '"\e/": "\C-r"'
-
+    bind -m emacs-standard '"\C-r": "\C-e'"'"'\C-a.\C-a\C-xs'"'"'\C-xm\C-a\C-xd\C-xc\C-b.\C-xk$(_redo_selector '"'"'\C-y\C-h'"'"')\C-k\C-a\C-xx\C-e\C-xr"'  
+    bind -m emacs-standard '"\ex": "\C-r"'
+    bind -m emacs-standard '"\e/": "\C-r"'
+  }
+  [ "$ZSH_VERSION" ] && {
+      zle -N _redow
+      # need skip_global_compinit=1 in ~/.zshenv on ubuntu for esc-/ on vicmd map
+      bindkey -M vicmd '/' _redow
+      bindkey -M viins '^r' _redow
+      bindkey -M emacs '\e/' _redow
+      bindkey -M emacs '^r' _redow
+  }
 }
 
 redo()
@@ -89,7 +148,7 @@ redo()
 }
 
 _redo_binds
-complete -F _redo_completions redo
+[ "$BASH" ] && complete -F _redo_completions redo
 
 # selector from https://ghithub.com/joknarf/selector
 
@@ -102,7 +161,7 @@ function _ctrl_c
 
 function _menuprompt
 {
-  typeset form filter=${3:-${_aitems[$_nsel]}} nb="$_nsel/$2 " pl=""
+  typeset form filter="${3:-${_aitems[$_nsel]}}" nb="$_nsel/$2 " pl=""
   printf "\r"
   #form="$1: %s%s"
   [ "$_powerline" = "y" ] && pl=""
@@ -172,12 +231,30 @@ function _items_split
   [ "$_nsel" ] && _items="${_aitems[$_nsel]}"
   _nsel=1
   unset _aitems
-  while read -r item;do
+  while IFS= read -r item;do
     _aitems[$i]="$item"
     i=$((i+1))
   done <<EOT
 $_items
 EOT
+}
+
+function _readkey
+{
+    typeset o=${1:-n} k
+    IFS= read -rs${o}1 key
+    [ "$key" = $'\x1b' ] && key="" && while true
+    do
+      k=""
+      read -rs${o}1 -t 0.001 k 2>/dev/null
+      [ $? = 1 ] && [ ! "$ZSH_VERSION" ] && read -rs${o}1 -t 1 k # old bash
+      [ ! "$k" ] && key=${key:-$'\x1b'} && break
+      key+="$k"
+      case "$key" in
+      '['[A-H]|'['*'~'|O[A-S]|'[1;2'[P-S]) break;;  
+      esac
+    done
+    printf "%s" "$key"
 }
 
 function _domenu 
@@ -198,38 +275,35 @@ function _domenu
   _items_ori="$_items"
   filter=""
   tput civis
-  stty -echo
+  stty -echo 2>/dev/null
   printf "\e[?7l" # nowrap
   : ${LINES:=$(tput lines)}
   [ "$_maxlines" -gt 2 ] || unset _maxlines
   _showmenu "$prompt" "$_nsel" "$nbitems" ""
   while true
   do
-    IFS= read -rs${o}1 k
+    k=$(_readkey $o)
     case $k in
-      $'\x1b')
-          filter=""
-          read -rs${o}2 -t.001 k 2>/dev/null
-          [ $? = 1 ] && read -rs${o}2 -t1 k
-          case $k in 
-            '[A') #up
-              _select "$prompt" "_nsel-1" "$nbitems" "$filter";;
-            '[B') #down
-              _select "$prompt" "_nsel+1" "$nbitems" "$filter";;
-            '[H'|'[D') #home or arrowleft
-              _select "$prompt" "1" "$nbitems" "$filter";;
-            '[F'|'[C') #end or arrowright
-              _select "$prompt" "nbitems" "$nbitems" "$filter";;
-            '[6') #pagedn [6~
-              read -rs${o}1 -t.001 k 2>/dev/null
-              [ $? = 1 ] && read -rs${o}1 -t1 k
-              _select "$prompt" "_nsel+lines-1" "$nbitems" "$filter";;
-            '[5') #pageup [5~
-              read -rs${o}1 -t.001 k 2>/dev/null
-              [ $? = 1 ] && read -rs${o}1 -t1 k
-              _select "$prompt" "_nsel-lines+1" "$nbitems" "$filter";;
-            *) break;;
-          esac;;
+      '[A'|OA) #up
+        filter="";_select "$prompt" "_nsel-1" "$nbitems" "$filter";;
+      '[B'|OB) #down
+        filter="";_select "$prompt" "_nsel+1" "$nbitems" "$filter";;
+      '[H'|'[D'|OD) #home or arrowleft
+        filter="";_select "$prompt" "1" "$nbitems" "$filter";;
+      '[F'|'[C'|OC) #end or arrowright
+        filter="";_select "$prompt" "nbitems" "$nbitems" "$filter";;
+      '[6~'|$'\x06') #pagedn Ctl-F
+        filter="";_select "$prompt" "_nsel+lines-1" "$nbitems" "$filter";;
+      '[5~'|$'\x02') #pageup Ctl-B
+        filter="";_select "$prompt" "_nsel-lines+1" "$nbitems" "$filter";;
+      '[19~'|$'\x04'|'[3~') # F8 Ctl-D delete
+        [ "$_delfunc" ] && $_delfunc "${_aitems[$_nsel]}"
+        unset "_aitems[$_nsel]"
+        [ "$BASH" ] && _aitems=(_ "${_aitems[@]}") && unset '_aitems[0]' ||\
+          _aitems=("${(@)_aitems[1,$_nsel-1]}" "${(@)_aitems[$_nsel+1,$nbitems]}")
+        nbitems=${#_aitems[@]}
+        tput ed
+        filter="";_select "$prompt" "$_nsel" "$nbitems" "$filter";;
       $'\x7f') #backspace
         filter=${filter%?}
         _items="$_items_ori"
@@ -248,7 +322,7 @@ function _domenu
           [ ! "$_items" ] && {
             printf "Not found !"
             tput el
-            read -rs${o}4 -t.5 k 2>/dev/null
+            read -rs${o}4 -t 0.5 k 2>/dev/null
             _items="$_items_ori"
             filter="${filter%?}"
             _nsel=""
@@ -259,15 +333,16 @@ function _domenu
           _showmenu "$prompt" "$_nsel" "$nbitems" "$filter"
         }
         _menuprompt "$prompt" "$nbitems" "$filter";;
-      $'\x06') # Ctl-F => pgdn
-        _select "$prompt" "_nsel+lines-1" "$nbitems" "$filter";;
-      $'\x02') # Ctl-B => pgup
-        _select "$prompt" "_nsel-lines+1" "$nbitems" "$filter";;
       $'\x0c') # Ctl-L => refresh
         _showmenu "$prompt" "$_nsel" "$nbitems" "$filter";;
       $'\x01') # Ctl-A => all
         unset _maxlines
         _showmenu "$prompt" "$_nsel" "$nbitems" "$filter";;
+      $'\x05') # Ctl-E purge
+      echo "=>";sleep 0.5
+        selected="${_aitems[$_nsel]}"
+        _purge=1
+        break;;
       $'\x0d'|''|$'\n') # enter
         [[ "$filter" =~ ^[0-9]+$ ]] && selected="${_aitems[$filter]}" || selected="${_aitems[$_nsel]}"
         break;;     
@@ -299,6 +374,7 @@ function selector
   _maxlines=0
   _autofilter=y
   _powerline=y
+  _delfunc=""
   while [ $# -gt 0 ]; do
     case "$1" in
       -p|--prompt)
@@ -322,6 +398,9 @@ function selector
       -a|--autofilter)
         [ "$2" ] && _autofilter="$2" || return 1
         ;;
+      -d|--deletefunc)
+        [ "$2" ] && _delfunc="$2" || return 1
+        ;;
       *)
         printf "usage: selector [-p <prompt>] -i <items>|-f <itemfile> [-P <y|n>]\n"
         printf "args :\n"
@@ -335,18 +414,23 @@ function selector
     esac
     shift 2
   done
-  _stty_ori=$(stty -g)
+  _stty_ori=$(stty -g 2>/dev/null)
+  _purge=""
   trap _ctrl_c INT
   LC_ALL=$__selector_lc _domenu "$prompt" "$filter" >&2
   trap - INT
-  stty $_stty_ori
+  stty $_stty_ori 2>/dev/null
   unset _items
   unset _maxlines
   unset _autofilter
-  [ "$selected" ] && printf "%s" "$selected" && return 0
+  [ "$selected" ] && {
+    printf "%s" "$selected"
+    [ "$_purge" ] && return 111
+    return 0
+  }
   return 1
 }
 
 [[ "$LANG" = *UTF-8 ]] && __selector_lc="$LANG" || {
-    type locale 2>/dev/null && locale -a |grep -q "en_US.UTF-8" && __selector_lc=en_US.UTF-8 || __selector_lc=C.UTF-8
+    type locale >/dev/null 2>/dev/null && locale -a |grep -iq "en_US.UTF-*8" && __selector_lc=en_US.UTF-8 || __selector_lc=C.UTF-8
 }
