@@ -242,7 +242,7 @@ EOT
 function _readkey
 {
     typeset o=${1:-n} k tmout=0.001
-    [ "$KSH_VERSION" ] && tmout=1
+    [ "$KSH_VERSION" ] && tmout=0.01
     IFS= read -rs${o}1 key
     [ "$key" = $'\x1b' ] && key="" && while true
     do
