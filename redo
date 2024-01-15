@@ -300,10 +300,11 @@ function _domenu
       '[19~'|$'\x04'|'[3~') # F8 Ctl-D delete
         [ "$_delfunc" ] && $_delfunc "${_aitems[$_nsel]}"
         unset "_aitems[$_nsel]"
-        [ "$ZSH_VERSION" ] &&  _aitems=("${(@)_aitems[1,$_nsel-1]}" "${(@)_aitems[$_nsel+1,$nbitems]}") ||\
-          _aitems=(_ "${_aitems[@]}") && unset '_aitems[0]'
+        [ "$ZSH_VERSION" ] && _aitems=("${(@)_aitems[1,$_nsel-1]}" "${(@)_aitems[$_nsel+1,$nbitems]}") ||\
+          { _aitems=(_ "${_aitems[@]}") && unset '_aitems[0]'; }
         nbitems=${#_aitems[@]}
         tput ed
+        [ "$nbitems" = 0 ] && break
         filter="";_select "$prompt" "$_nsel" "$nbitems" "$filter";;
       $'\x7f'|$'\x08') #backspace
         filter=${filter%?}
