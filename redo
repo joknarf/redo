@@ -305,7 +305,7 @@ function _domenu
         nbitems=${#_aitems[@]}
         tput ed
         filter="";_select "$prompt" "$_nsel" "$nbitems" "$filter";;
-      $'\x7f') #backspace
+      $'\x7f'|$'\x08') #backspace
         filter=${filter%?}
         _items="$_items_ori"
         _nsel=""
