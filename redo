@@ -39,7 +39,7 @@ _redo_del()
       print(substr($0, 1, ind))
       $0 = substr($0, ind+length(todel))
     }
-  }1' ret='↵ ' RS='\003' ORS='' b="$BASH" todel="\n${todel//\\/\\\\}\n" ${HISTFILE:=~/.bash_history} >~/.redo_history.tmp && mv ~/.redo_history.tmp ${HISTFILE:=~/.bash_history} 
+  }1' ret='↵ ' RS='\003' ORS='' b="$BASH" todel="\n${todel//\\/\\\\}\n" "${HISTFILE:=~/.bash_history}" >~/.redo_history.tmp && mv ~/.redo_history.tmp "${HISTFILE:=~/.bash_history}" 
 }
 
 redodel()
