@@ -41,13 +41,27 @@ Then on command line:
 * filter pattern can be applied entering text (ext regexp)
 * selection can be done entering item number
 
-## delete history
+## delete history commands
 
-Using Del/F8 when using bind key (`Esc-/` `Ctl-R`) will not remove command from current shell history (line editing limitation), but the HISTFILE will be purged from the command.  
-To delete from current shell history use `redodel` then chose command and press Del.
+To delete command from current shell history and `$HISTFILE` use `redodel` command then chose command and press `Del or F8`.  
 
-* zsh options to set : 
-  * `setopt appendhistory`
-  * `setopt incappendhistory`
-* ubuntu specific, in vi mode need to put in `~/.zshenv` to have `Esc-/` correctly binded:
-  * `skip_global_compinit=1`
+Using Del/F8 when using redo bind key (`Esc-/` `Ctl-R`) will not remove command from current shell history (line editing limitation), but the `$HISTFILE` will be purged from the command.  
+
+When deleting history in `$HISTFILE` using redo bind key, set the following options to ensure the history is not written later in `$HISTFILE` by shell.
+* zsh options to set :
+  ```zsh
+  setopt appendhistory
+  setopt incappendhistory
+  ```
+
+* bash options to set :
+  ```
+  shopt -s histappend cmdlist
+  PROMPT_COMMAND='history -a'
+  ```
+## limitations
+
+* zsh on ubuntu 22 : in vi mode, to have `Esc-/` correctly binded, you need to put in `~/.zshenv`:
+  ```
+  skip_global_compinit=1
+  ```
