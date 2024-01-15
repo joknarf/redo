@@ -10,10 +10,10 @@ _get_hist()
   }
   [ "$ZSH_VERSION" ] && _hist=$(printf "\t %s\n" "${history[@]}")
   printf "%s" "$_hist"| awk '
-      BEGIN{ done[""]=1 }
-      $0 in done {next}
-      {done[$0]=1;sub("\n$","");gsub("\n",ret);print $0}
-    ' RS="\n*+\t " ret='↵ '  
+    BEGIN{ done[""]=1 }
+    $0 in done {next}
+    {done[$0]=1;sub("\n$","");gsub("\n",ret);print $0}
+  ' RS="\n*+\t " ret='↵ '  
 }
 
 _redo_del()
@@ -35,10 +35,10 @@ _redo_del()
     _hist="$( (fc -lr -0 -1000) )" # missing last cmd without subshell on bash <4.4
     [ "$_hist" ] || _hist="$(fc -lr -1000)" # bug bash <4.4 with multiline last command
     for i in $(printf "%s" "$_hist"| awk '
-          {sub("\n$","");gsub("\n",ret)}
-          $0==todel {gsub("^\n|\t $","",prevrt);print prevrt }
-          {prevrt=RT}
-        ' RS="\n*[0-9]+\t " ret='↵ ' todel="${todel//\\/\\\\}")
+        {sub("\n$","");gsub("\n",ret)}
+        $0==todel {gsub("^\n|\t $","",prevrt);print prevrt }
+        {prevrt=RT}
+      ' RS="\n*[0-9]+\t " ret='↵ ' todel="${todel//\\/\\\\}")
     do
       history -d $i
     done
@@ -133,18 +133,18 @@ _redo_binds()
     bind -m emacs-standard '"\e/": "\C-r"'
   }
   [ "$ZSH_VERSION" ] && {
-      zle -N _redow
-      # need skip_global_compinit=1 in ~/.zshenv on ubuntu for esc-/ on vicmd map
-      bindkey -M vicmd '/' _redow
-      bindkey -M viins '^r' _redow
-      bindkey -M emacs '\e/' _redow
-      bindkey -M emacs '^r' _redow
+    zle -N _redow
+    # need skip_global_compinit=1 in ~/.zshenv on ubuntu for esc-/ on vicmd map
+    bindkey -M vicmd '/' _redow
+    bindkey -M viins '^r' _redow
+    bindkey -M emacs '\e/' _redow
+    bindkey -M emacs '^r' _redow
   }
 }
 
 redo()
 {
-    "$@"
+  "$@"
 }
 
 _redo_binds
@@ -241,21 +241,21 @@ EOT
 
 function _readkey
 {
-    typeset o=${1:-n} k tmout=0.001
-    [ "$KSH_VERSION" ] && tmout=0.01
-    IFS= read -rs${o}1 key
-    [ "$key" = $'\x1b' ] && key="" && while true
-    do
-      k=""
-      read -rs${o}1 -t $tmout k 2>/dev/null
-      [ $? = 1 ] && [ "$BASH" ] && read -rs${o}1 -t 1 k # old bash
-      [ ! "$k" ] && key=${key:-$'\x1b'} && break
-      key+="$k"
-      case "$key" in
-      '['[A-H]|'['*'~'|O[A-S]|'[1;2'[P-S]) break;;
-      esac
-    done
-    printf "%s" "$key"
+  typeset o=${1:-n} k tmout=0.001
+  [ "$KSH_VERSION" ] && tmout=0.01
+  IFS= read -rs${o}1 key
+  [ "$key" = $'\x1b' ] && key="" && while true
+  do
+    k=""
+    read -rs${o}1 -t $tmout k 2>/dev/null
+    [ $? = 1 ] && [ "$BASH" ] && read -rs${o}1 -t 1 k # old bash
+    [ ! "$k" ] && key=${key:-$'\x1b'} && break
+    key+="$k"
+    case "$key" in
+    '['[A-H]|'['*'~'|O[A-S]|'[1;2'[P-S]) break;;
+    esac
+  done
+  printf "%s" "$key"
 }
 
 function _domenu 
@@ -434,5 +434,5 @@ function selector
 }
 
 [[ "$LANG" = *UTF-8 ]] && __selector_lc="$LANG" || {
-    type locale >/dev/null 2>/dev/null && locale -a |grep -iq "en_US.UTF-*8" && __selector_lc=en_US.UTF-8 || __selector_lc=C.UTF-8
+  type locale >/dev/null 2>/dev/null && locale -a |grep -iq "en_US.UTF-*8" && __selector_lc=en_US.UTF-8 || __selector_lc=C.UTF-8
 }
