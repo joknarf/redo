@@ -55,9 +55,10 @@ redodel()
 
 _redo_selector()
 {
-  typeset _redo _hist
+  typeset _redo _hist _orig="$1"
   tput el >&2
-  printf "%s\n" "$1" >&2
+  [ "$ZSH_VERSION" ] && _orig=""
+  printf "%s\n" "$_orig" >&2
   _redo="$(selector -p redo -m 10 -d _redo_del -i "$(_get_hist |grep "$1")" || printf "%s" "$1")"
   printf "%s" "$_redo" | awk '{gsub(ret,"\n")}1' ret='↵ '
   tput cuu1 >&2
@@ -324,7 +325,7 @@ function _domenu
           [ ! "$_items" ] && {
             printf "Not found !"
             tput el
-            read -rs${o}4 -t 0.5 k 2>/dev/null
+            read -rs${o}1 -t 0.5 k 2>/dev/null
             _items="$_items_ori"
             filter="${filter%?}"
             _nsel=""
