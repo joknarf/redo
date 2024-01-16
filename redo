@@ -165,9 +165,10 @@ _redo_binds
 # no proper way to restore tty on trap
 function _ctrl_c
 {
-  :
-  # tput cnorm
-  # stty sane
+  [ "$ZSH_VERSION" ] && {
+    tput cuu1
+    tput el
+  }
 }
 
 function _menuprompt
