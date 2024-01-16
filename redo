@@ -419,7 +419,7 @@ function selector
         [ "$2" ] && _keyfunc="$2" || return 1
         ;;
       *)
-        printf "usage: selector [-p <prompt>] -i <items>|-f <itemfile> [-P <y|n>] [-d <cmd>]\n"
+        printf "usage: selector [-p <prompt>] -i <items>|-f <itemfile> [-P <y|n>] [-k <keyfunc>]\n"
         printf "args :\n"
         printf "%s\n" "  -p, --prompt          menu prompt"
         printf "%s\n" "  -i, --items           menu items \n separated"
