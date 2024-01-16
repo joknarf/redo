@@ -50,15 +50,25 @@ _redo_del()
 redodel()
 {
   tput cuu1 >&2
-  selector -p redodel -m 10 -d _redo_del -i "$(_get_hist)"
+  selector -p redodel -m 10 - _redo_key -i "$(_get_hist)"
 }
 
+_redo_key()
+{
+  k="$1" cmd="${_aitems[$_nsel]}"
+  case "$k" in
+    '[19~'|$'\x04'|'[3~') # F8 Ctl-D delete
+      _redo_del "$cmd"
+      ;;
+  esac
+  return 2
+}
 _redo_selector()
 {
   typeset _redo _hist
   [ "$BASH" ] && tput el >&2 && printf "%s" "$1" >&2
   printf "\n" >&2
-  _redo="$(selector -p redo -m 10 -d _redo_del -i "$(_get_hist |grep "$1")" || printf "%s" "$1")"
+  _redo="$(selector -p redo -m 10 -k _redo_key -i "$(_get_hist |grep "$1")" || printf "%s" "$1")"
   printf "%s" "$_redo" | awk '{gsub(ret,"\n")}1' ret='↵ '
   tput cuu1 >&2
 }
@@ -163,7 +173,6 @@ function _menuprompt
 {
   typeset form filter="${3:-${_aitems[$_nsel]}}" nb="$_nsel/$2 " pl=""
   printf "\r"
-  #form="$1: %s%s"
   [ "$_powerline" = "y" ] && pl=""
   form="\e[30m\e[44m\e[97m $1 \e[0m\e[34m\e[44m\e[100m$pl\e[97m %s\e[0m\e[90m\e[100m\e[49m$pl\e[0m %s"
   printf "$form" "$nb" "$filter"
@@ -201,6 +210,7 @@ function _showmenu
   size=$((nbitems+1))
   [ "$size" -gt $lines ] && size=$lines
   # back to top of menu
+  tput ed
   i=1;while [ $i -lt $size ];do
     echo cuu1
     i=$((i + 1))
@@ -283,8 +293,20 @@ function _domenu
   _showmenu "$prompt" "$_nsel" "$nbitems" ""
   while true
   do
-    k=$(_readkey $o)
-    case $k in
+    k="$(_readkey $o)"
+    [ "$_keyfunc" ] && { # custom key control
+      $_keyfunc "$k" # 0: already managed / 1: managed exit / 2: default 
+      case "$?" in
+        0) 
+          _items_split "."
+          nbitems=${#_aitems[@]}
+          filter=""
+          _showmenu "$prompt" "$_nsel" "$nbitems" ""
+          continue;;
+        1) break;;
+      esac
+    }
+    case "$k" in
       '[A'|OA) #up
         filter="";_select "$prompt" "_nsel-1" "$nbitems" "$filter";;
       '[B'|OB) #down
@@ -298,7 +320,6 @@ function _domenu
       '[5~'|$'\x02') #pageup Ctl-B
         filter="";_select "$prompt" "_nsel-lines+1" "$nbitems" "$filter";;
       '[19~'|$'\x04'|'[3~') # F8 Ctl-D delete
-        [ "$_delfunc" ] && $_delfunc "${_aitems[$_nsel]}"
         unset "_aitems[$_nsel]"
         [ "$ZSH_VERSION" ] && _aitems=("${(@)_aitems[1,$_nsel-1]}" "${(@)_aitems[$_nsel+1,$nbitems]}") ||\
           { _aitems=(_ "${_aitems[@]}") && unset '_aitems[0]'; }
@@ -331,7 +352,6 @@ function _domenu
             _items_split "$filter"
           }
           nbitems=${#_aitems[@]}
-          tput ed
           _showmenu "$prompt" "$_nsel" "$nbitems" "$filter"
         }
         _menuprompt "$prompt" "$nbitems" "$filter";;
@@ -340,11 +360,6 @@ function _domenu
       $'\x01') # Ctl-A => all
         unset _maxlines
         _showmenu "$prompt" "$_nsel" "$nbitems" "$filter";;
-      $'\x05') # Ctl-E purge
-      echo "=>";sleep 0.5
-        selected="${_aitems[$_nsel]}"
-        _purge=1
-        break;;
       $'\x0d'|''|$'\n') # enter
         [[ "$filter" =~ ^[0-9]+$ ]] && selected="${_aitems[$filter]}" || selected="${_aitems[$_nsel]}"
         break;;     
@@ -376,7 +391,7 @@ function selector
   _maxlines=0
   _autofilter=y
   _powerline=y
-  _delfunc=""
+  _keyfunc=""
   while [ $# -gt 0 ]; do
     case "$1" in
       -p|--prompt)
@@ -400,24 +415,25 @@ function selector
       -a|--autofilter)
         [ "$2" ] && _autofilter="$2" || return 1
         ;;
-      -d|--deletefunc)
-        [ "$2" ] && _delfunc="$2" || return 1
+      -k|--keyfunc)
+        [ "$2" ] && _keyfunc="$2" || return 1
         ;;
       *)
-        printf "usage: selector [-p <prompt>] -i <items>|-f <itemfile> [-P <y|n>]\n"
+        printf "usage: selector [-p <prompt>] -i <items>|-f <itemfile> [-P <y|n>] [-d <cmd>]\n"
         printf "args :\n"
         printf "%s\n" "  -p, --prompt          menu prompt"
         printf "%s\n" "  -i, --items           menu items \n separated"
         printf "%s\n" "  -f, --file            file with items"
         printf "%s\n" "  -F, --filter          regexp pattern filter items"
         printf "%s\n" "  -P, --powerline       y or n, powerline symbol usage"
+        printf "%s\n" "  -a, --autofilter      y or n, filter at keystrokes (default y)"
+        printf "%s\n" "  -k, --keyfunc         Custom additional key function"
         return 1
         ;;
     esac
     shift 2
   done
   _stty_ori=$(stty -g 2>/dev/null)
-  _purge=""
   trap _ctrl_c INT
   LC_ALL=$__selector_lc _domenu "$prompt" "$filter" >&2
   trap - INT
@@ -425,11 +441,7 @@ function selector
   unset _items
   unset _maxlines
   unset _autofilter
-  [ "$selected" ] && {
-    printf "%s" "$selected"
-    [ "$_purge" ] && return 111
-    return 0
-  }
+  [ "$selected" ] && printf "%s" "$selected" && return 0
   return 1
 }
 
