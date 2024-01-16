@@ -165,8 +165,9 @@ _redo_binds
 # no proper way to restore tty on trap
 function _ctrl_c
 {
-  tput ich 16
-  printf "(Ctl-X to exit)\r"
+  :
+  # tput cnorm
+  # stty sane
 }
 
 function _menuprompt
