@@ -50,7 +50,7 @@ _redo_del()
 redodel()
 {
   tput cuu1 >&2
-  selector -p redodel -m 10 - _redo_key -i "$(_get_hist)"
+  selector -p redodel -m 10 -k _redo_key -i "$(_get_hist)"
 }
 
 _redo_key()
