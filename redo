@@ -68,7 +68,7 @@ _redo_selector()
   typeset _redo _hist
   [ "$BASH" ] && tput el >&2 && printf "%s" "$1" >&2
   printf "\n" >&2
-  _redo="$(selector -p redo -m 10 -k _redo_key -i "$(_get_hist |grep "$1")" || printf "%s" "$1")"
+  _redo="$(selector -p redo -m 10 -k _redo_key -i "$(_get_hist |grep -F -- "$1")" || printf "%s" "$1")"
   printf "%s" "$_redo" | awk '{gsub(ret,"\n")}1' ret='↵ '
   tput cuu1 >&2
 }
@@ -166,8 +166,8 @@ _redo_binds
 function _ctrl_c
 {
   [ "$ZSH_VERSION" ] && {
-    tput cuu1
-    tput el
+    tput cuu1 >&2
+    tput el >&2
   }
 }
 
@@ -234,21 +234,18 @@ function _select
 
 function _items_split
 {
-  typeset filter="$1" i=1 item
+  typeset filter="$1" item
 
   [ "$filter" ] && {
     _nsel=""
-    [[ "$filter" =~ ^[0-9]+$ ]] && _nsel=$filter || _items="$(printf "%s" "$_items" |grep -- "$filter" 2>/dev/null|uniq)"
+    [[ "$filter" =~ ^[0-9]+$ ]] && _nsel=$filter || _items="$(printf "%s" "$_items" |grep -F -- "$filter" 2>/dev/null|uniq)"
   }
   [ "$_nsel" ] && _items="${_aitems[$_nsel]}"
   _nsel=1
-  unset _aitems
-  while IFS= read -r item;do
-    _aitems[$i]="$item"
-    i=$((i+1))
-  done <<EOT
-$_items
-EOT
+  IFS=$'\n'
+  # ZSH array index starts at 1
+  [ "$ZSH_VERSION" ] && _aitems=( $_items ) || { _aitems=( _ $_items ); unset '_aitems[0]'; }
+  IFS=$' \t\n'
 }
 
 function _readkey
@@ -286,13 +283,12 @@ function _domenu
     return 0
   }
   _items_ori="$_items"
-  filter=""
   tput civis
   stty -echo 2>/dev/null
   printf "\e[?7l" # nowrap
   : ${LINES:=$(tput lines)}
   [ "$_maxlines" -gt 2 ] || unset _maxlines
-  _showmenu "$prompt" "$_nsel" "$nbitems" ""
+  _showmenu "$prompt" "$_nsel" "$nbitems" "$filter"
   while true
   do
     k="$(_readkey $o)"
@@ -301,9 +297,10 @@ function _domenu
       case "$?" in
         0) 
           _items_split "."
-          nbitems=${#_aitems[@]}
           filter=""
-          _showmenu "$prompt" "$_nsel" "$nbitems" ""
+          nbitems=${#_aitems[@]}
+          [ "$_force_nsel" ] && _nsel=$_force_nsel && unset _force_nsel
+          _showmenu "$prompt" "$_nsel" "$nbitems" "$filter"
           continue;;
         1) break;;
       esac
@@ -412,7 +409,7 @@ function selector
         [ "$2" ] && _powerline="$2" || return 1
         ;;
       -F|--filter)
-        [ "$2" ] && filter="$2" || return 1
+        [ "$#" -ge 2 ] && filter="$2" || return 1
         ;;
       -a|--autofilter)
         [ "$2" ] && _autofilter="$2" || return 1
