@@ -234,10 +234,11 @@ function _select
 
 function _items_split
 {
-  typeset filter="$1" item
+  typeset filter="$1" item IFS
 
   [ "$filter" ] && {
     _nsel=""
+    [ "$filter" = . ] && filter=""
     [[ "$filter" =~ ^[0-9]+$ ]] && _nsel=$filter || _items="$(printf "%s" "$_items" |grep -F -- "$filter" 2>/dev/null|uniq)"
   }
   [ "$_nsel" ] && _items="${_aitems[$_nsel]}"
