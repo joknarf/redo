@@ -81,15 +81,6 @@ _redow() {
   zle vi-insert
 }
 
-_redo_completions()
-{
-  [ ${#COMP_WORDS[@]} -gt 2 ] && return
-  printf "\r" >&2
-  COMPREPLY="$(_redo_selector "${COMP_WORDS[1]}")"
-  kill -WINCH $$
-  [ ! "${COMPREPLY[0]}" ] && COMPREPLY=()
-}
-
 _redo_binds()
 {
   typeset redo_bind
@@ -152,13 +143,7 @@ _redo_binds()
   }
 }
 
-redo()
-{
-  "$@"
-}
-
 _redo_binds
-[ "$BASH" ] && complete -F _redo_completions redo
 
 # selector from https://ghithub.com/joknarf/selector
 
