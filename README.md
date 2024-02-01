@@ -24,21 +24,21 @@ Then on command line:
 
 ## keys in menu
 
-|key       | action                          |
-|----------|---------------------------------|
-|Down      | select nex item                 | 
-|Up        | select prev item                |
-|Right/End | select last item                |
-|Left/Home | select first item               | 
-|PgUp/Ctl-F| next page                       |
-|PgDn/Ctl-B| previous page                   |
-|Ctl-X/Esc | exit                            |
-|Ctl-A     | use all screen to display menu  |
-|Enter     | validate selected item          |
-|Tab       | apply filter/new filter         |
-|Del-F8    | Delete item from history file   |
+|key                             | action                                                |
+|--------------------------------|-------------------------------------------------------|
+|<kbd>⇩</kbd>                    | select next item                                      | 
+|<kbd>⇧</kbd>                    | select prev item                                      |
+|<kbd>End</kbd>/<kbd>⇨</kbd>     | select last item                                      |
+|<kbd>Home</kbd>/<kbd>⇦</kbd>    | select first item                                     | 
+|<kbd>PgUp</kbd>/<kbd>Ctl-F</kbd>| next page                                             |
+|<kbd>PgDn</kbd>/<kbd>Ctl-B</kbd>| previous page                                         |
+|<kbd>Esc</kbd>                  | exit                                                  |
+|<kbd>Ctrl</kbd>+<kbd>A</kbd>    | use all screen to display menu                        |
+|<kbd>Enter</kbd>/<kbd>Tab</kbd> | put selected on command line                          |
+|<kbd>Tab</kbd>                  | apply filter/new filter                               |
+|<kbd>Del</kbd>/<kbd>F8</kbd>    | delete item from history file                         |
 
-* filter pattern can be applied entering text (ext regexp)
+* filter pattern can be applied entering text
 * selection can be done entering item number
 
 ## delete history commands
