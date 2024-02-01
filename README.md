@@ -1,6 +1,6 @@
 # redo
 bash/zsh interactive history menu  
-replacement for bash/zsh `Ctl-R` and `Esc+/` to search in history and re-execute/re-edit commands.
+replacement for bash/zsh <kbd>Ctl</kbd>+<kbd>R</kbd> and <kbd>Esc</kbd>+<kbd>/</kbd> to search in history and re-execute/re-edit commands.
 
 ## usage
 
@@ -14,8 +14,8 @@ $ source <(curl -Ls https://raw.githubusercontent.com/joknarf/redo/main/redo)
 ```
 
 Then on command line:  
-* `Esc+/` or `Ctl-R` to access history menu
-* you can put pattern on command line + `Esc+/` or `Ctl-R` to filter and access history menu
+* <kbd>Esc</kbd>+<kbd>/</kbd> or <kbd>Ctl</kbd>+<kbd>R</kbd> to access history menu
+* you can put pattern on command line + <kbd>Esc</kbd>+<kbd>/</kbd> or <kbd>Ctl</kbd>+<kbd>R</kbd> to filter and access history menu
 * in menu enter pattern to filter/re-filter history
 * select command line with arrows or enter number and press enter
 * you can then edit the command line before execution
