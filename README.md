@@ -43,9 +43,9 @@ Then on command line:
 
 ## delete history commands
 
-To delete command from current shell history and `$HISTFILE` use `redodel` command then chose command and press `Del or F8`.  
+To delete command from current shell history and `$HISTFILE` use `redodel` command then chose command and press <kbd>Del</kbd> or <kbd>F8</kbd>.  
 
-Using Del/F8 when using redo bind key (`Esc-/` `Ctl-R`) will not remove command from current shell history (line editing limitation), but the `$HISTFILE` will be purged from the command.  
+Using <kbd>Del</kbd>/<kbd>F8</kbd> when using redo bind key (<kbd>Esc</kbd>+<kbd>/</kbd> or <kbd>Ctl</kbd>+<kbd>R</kbd>) will not remove command from current shell history (line editing limitation), but the `$HISTFILE` will be purged from the command.  
 
 When deleting history in `$HISTFILE` using redo bind key, set the following options to ensure the history is not written later in `$HISTFILE` by shell.
 * zsh options to set :
@@ -61,7 +61,7 @@ When deleting history in `$HISTFILE` using redo bind key, set the following opti
   ```
 ## limitations
 
-* zsh on ubuntu 22 : in vi mode, to have `Esc-/` correctly binded, you need to put in `~/.zshenv`:
+* zsh on ubuntu 22 : in vi mode, to have <kbd>Esc</kbd>+<kbd>/</kbd> correctly binded, you need to put in `~/.zshenv`:
   ```
   skip_global_compinit=1
   ```
