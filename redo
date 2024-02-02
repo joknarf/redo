@@ -296,9 +296,9 @@ function _domenu
         filter="";_select "$prompt" "_nsel-1" "$nbitems" "$filter";;
       '[B'|OB) #down
         filter="";_select "$prompt" "_nsel+1" "$nbitems" "$filter";;
-      '[H'|'[D'|OD) #home or arrowleft
+      '[H'|'[D'|OD|'[1;2B') #home or arrowleft shift-dn
         filter="";_select "$prompt" "1" "$nbitems" "$filter";;
-      '[F'|'[C'|OC) #end or arrowright
+      '[F'|'[C'|OC|'[1;2A') #end or arrowright shift-up
         filter="";_select "$prompt" "nbitems" "$nbitems" "$filter";;
       '[6~'|$'\x06') #pagedn Ctl-F
         filter="";_select "$prompt" "_nsel+lines-1" "$nbitems" "$filter";;
