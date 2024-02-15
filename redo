@@ -178,7 +178,7 @@ function _menuprompt
 
 function _showmenu 
 {
-  typeset prompt="$1" nsel="$2" nbitems="$3" filter="$4" item i min max sel lines icon path
+  typeset prompt="$1" nsel="$2" nbitems="$3" filter="$4" item i min max sel lines icon fpath
 
   _menuprompt "$prompt" "$nbitems" "$filter"
   w=$nbitems;w=${#w}
@@ -198,9 +198,9 @@ function _showmenu
     [[ $i -le $max ]] || break
     icon=''
     [ "$_sel_option" = filenames ] && {
-      [[ "$item" = \~/* ]] && path="$HOME/"${item#\~/} || path="$item"
-      if [ -d "$path" ] ;then icon="$SELECTOR_FOLDER_ICON "
-      else [ -e "$path" -o -L "$path" ] && icon="$SELECTOR_FILE_ICON ";fi
+      [[ "$item" = \~/* ]] && fpath="$HOME/"${item#\~/} || fpath="$item"
+      if [ -d "$fpath" ] ;then icon="$SELECTOR_FOLDER_ICON "
+      else [ -e "$fpath" -o -L "$fpath" ] && icon="$SELECTOR_FILE_ICON ";fi
     }
     if [[ $nsel == "$i" ]]; then 
       printf "$sel" $i "$icon$item"
@@ -245,7 +245,7 @@ function _items_split
   _nsel=1
   IFS=$'\n'
   # ZSH array index starts at 1
-  [ "$ZSH_VERSION" ] && _aitems=( $_items ) || { _aitems=( _ $_items ); unset '_aitems[0]'; }
+  [ "$ZSH_VERSION" ] && _aitems=( $(printf %s "$_items") ) || { _aitems=( _ $_items ); unset '_aitems[0]'; }
   IFS=$' \t\n'
 }
 
