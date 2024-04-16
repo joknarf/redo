@@ -234,7 +234,7 @@ function _select
 
 function _items_split
 {
-  typeset filter="$1" item IFS
+  typeset filter="$1" item IFS=$' \t\n'
 
   [ "$filter" ] && {
     _nsel=""
