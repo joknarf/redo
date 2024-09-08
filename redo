@@ -137,6 +137,7 @@ _redo_binds()
     zle -N _redow
     # need skip_global_compinit=1 in ~/.zshenv on ubuntu for esc-/ on vicmd map
     bindkey -M vicmd '/' _redow
+    bindkey -M viins '\e/' _redow
     bindkey -M viins '^r' _redow
     bindkey -M emacs '\e/' _redow
     bindkey -M emacs '^r' _redow
