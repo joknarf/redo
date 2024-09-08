@@ -108,13 +108,13 @@ _redo_binds()
     # - cut end of line
     # - expand line
     bind_redo='\eA'"'"'\eI.\eI\C-xs'"'"'\C-xm\e0xi\C-xc\ei.\C-xk\"$(_redo_selector '"'"'\C-y\C-h'"'"')\"\C-xe\eI\C-xx\eA\C-xr'
-    bind -m vi-insert '"\C-r": "'"$bind_redo"'"'
     # version not taking parameter from current command line:
     #bind -m vi-insert '"\C-r": "\C-xd$(_redo_selector)\e0i\C-xx\C-xr"'
-    
-    #bind -m vi-insert '"\ex": "'"$bind_redo"'"'
-    bind -m vi-insert '"\e/": "'"$bind_redo"'"'
-    bind -m vi-command '"/": "'"A$bind_redo"'"'
+    bind -m vi-insert '"\C-r": "'"$bind_redo"'"' # ctl r    
+    bind -m vi-insert '"\e/": "'"$bind_redo"'"'  # esc /
+    bind -m vi-insert '"\e[Z": "'"$bind_redo"'"' # shift tab
+    bind -m vi-command '"/": "'"A$bind_redo"'"'  # /
+    bind -m vi-command '"\e[Z": "'"A$bind_redo"'"' # shift tab
 
     bind -m emacs-standard '"\C-xr": redraw-current-line'
     bind -m emacs-standard '"\C-xx": shell-expand-line'
@@ -132,15 +132,21 @@ _redo_binds()
     bind -m emacs-standard '"\C-r": "\C-e'"'"'\C-a.\C-a\C-xs'"'"'\C-xm\C-a\C-xd\C-xc\C-b.\C-xk$(_redo_selector '"'"'\C-y\C-h'"'"')\C-k\C-a\C-xx\C-e\C-xr"'  
     bind -m emacs-standard '"\ex": "\C-r"'
     bind -m emacs-standard '"\e/": "\C-r"'
+    bind -m emacs-standard '"\e[Z": "\C-r"'
+
   }
   [ "$ZSH_VERSION" ] && {
     zle -N _redow
     # need skip_global_compinit=1 in ~/.zshenv on ubuntu for esc-/ on vicmd map
-    bindkey -M vicmd '/' _redow
-    bindkey -M viins '\e/' _redow
-    bindkey -M viins '^r' _redow
-    bindkey -M emacs '\e/' _redow
-    bindkey -M emacs '^r' _redow
+    bindkey -M vicmd '/' _redow     # /
+    bindkey -M vicmd '\e[Z' _redow  # shift tab
+    bindkey -M vicmd '^r' _redow    # ctl r
+    bindkey -M viins '\e/' _redow   # esc /
+    bindkey -M viins '\e[Z' _redow  # shift tab
+    bindkey -M viins '^r' _redow    # ctl r
+    bindkey -M emacs '\e/' _redow   # esc /
+    bindkey -M emacs '^r' _redow    # ctl r
+    bindkey -M emacs '\e[Z' _redow  # shift tab
   }
 }
 
