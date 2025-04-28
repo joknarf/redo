@@ -93,6 +93,55 @@ _redo_binds()
   typeset redo_bind
   [ -t 1 ] || return
   [[ ! -o emacs ]] && [[ ! -o vi ]] && set -o emacs
+  [ "${BASH_VERSION%%.*}" = 3 ] && {
+    bind -m vi-insert '"\C-xr": redraw-current-line'
+    bind -m vi-insert '"\C-xx": shell-expand-line'
+    bind -m vi-insert '"\C-xk": backward-kill-line'
+    bind -m vi-insert '"\C-xs": character-search'
+    bind -m vi-insert '"\C-xe": kill-line'
+    bind -m vi-insert '"\C-xm": set-mark'
+    bind -m vi-insert '"\C-xc": exchange-point-and-mark'
+    # safe param quoting (but take only current line until first simple quote)
+    # prevent expansion in filter / bell ring
+    # - append simple quote to line
+    # - add "." begin of line return begin of line
+    # - search simple quote
+    # - mark position
+    # - delete first character "." added
+    # - exchange mark
+    # - add character "." before simple quote (for kill ring if empty)
+    # - cut before simple quote
+    # - paste in param, remove last character added
+    # - cut end of line
+    # - expand line
+    bind_redo='\eA'"'"'\eI.\eI\C-xs'"'"'\C-xm\e0xi\C-xc\ei.\C-xk\"$(_redo_selector '"'"'\C-y\C-h'"'"')\"\C-xe\eI\C-xx\eA\C-xr'
+    # version not taking parameter from current command line:
+    #bind -m vi-insert '"\C-r": "\C-xd$(_redo_selector)\e0i\C-xx\C-xr"'
+    bind -m vi-insert '"\C-r": "'"$bind_redo"'"' # ctl r    
+    bind -m vi-insert '"\e/": "'"$bind_redo"'"'  # esc /
+    bind -m vi-insert '"\e[Z": "'"$bind_redo"'"' # shift tab
+    bind -m vi-command '"/": "'"A$bind_redo"'"'  # /
+    bind -m vi-command '"\e[Z": "'"A$bind_redo"'"' # shift tab
+
+    bind -m emacs-standard '"\C-xr": redraw-current-line'
+    bind -m emacs-standard '"\C-xx": shell-expand-line'
+    bind -m emacs-standard '"\C-xk": backward-kill-line'
+    bind -m emacs-standard '"\C-xs": character-search'
+    #bind -m emacs-standard '"\C-xb": character-search-backward'
+    bind -m emacs-standard '"\C-xd": delete-char'
+    bind -m emacs-standard '"\C-xm": set-mark'
+    bind -m emacs-standard '"\C-xc": exchange-point-and-mark'
+    # \C-a beginning-of-line
+    # \C-e end-of-line
+    # \C-k kill-line
+    # safe param quoting (takes only current line until first simple quote)
+
+    bind -m emacs-standard '"\C-r": "\C-e'"'"'\C-a.\C-a\C-xs'"'"'\C-xm\C-a\C-xd\C-xc\C-b.\C-xk$(_redo_selector '"'"'\C-y\C-h'"'"')\C-k\C-a\C-xx\C-e\C-xr"'  
+    bind -m emacs-standard '"\ex": "\C-r"'
+    bind -m emacs-standard '"\e/": "\C-r"'
+    bind -m emacs-standard '"\e[Z": "\C-r"'
+    return
+  }
   [ "$BASH" ] && {
     bind -m vi-insert -x '"\C-r": _redob' # ctl r
     bind -m vi-insert '"\e/": "\C-r"'  # esc /
@@ -103,6 +152,7 @@ _redo_binds()
     bind -m emacs-standard -x '"\C-r": _redob' # ctl r
     bind -m emacs-standard '"\e/": "\C-r"'  # esc /
     bind -m emacs-standard '"\e[Z": "\C-r"' # shift tab
+    return
   }
   [ "$ZSH_VERSION" ] && {
     zle -N _redow
