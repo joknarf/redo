@@ -282,8 +282,8 @@ function _readkey
   IFS= read -rs${o}1 key
   [ "$key" = $'\x1b' ] && key="" && while true
   do
-    k=""
-    read -rs${o}1 -t $tmout k 2>/dev/null
+    k=""s
+    LC_NUERIC=C read -rs${o}1 -t $tmout k 2>/dev/null # LC_NUMERIC=C for old ksh
     [ $? = 1 ] && [ "$BASH" ] && read -rs${o}1 -t 1 k # old bash
     [ ! "$k" ] && key=${key:-$'\x1b'} && break
     key+="$k"
