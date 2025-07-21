@@ -14,6 +14,7 @@ $ source <(curl -Ls https://raw.githubusercontent.com/joknarf/redo/main/redo)
 ```
 
 Then on command line:  
+
 * <kbd>Shift</kbd><kbd>Tab</kbd> or <kbd>Esc</kbd>+<kbd>/</kbd> or <kbd>Ctl</kbd><kbd>R</kbd> to access history menu
 * you can put pattern on command line + <kbd>Shift</kbd><kbd>Tab</kbd> or <kbd>Esc</kbd>+<kbd>/</kbd> or <kbd>Ctl</kbd>+<kbd>R</kbd> to filter and access history menu
 * in menu enter pattern to filter/re-filter history
@@ -48,6 +49,7 @@ To delete command from current shell history and `$HISTFILE` use `redodel` comma
 Using <kbd>Del</kbd>/<kbd>F8</kbd> when using redo bind key (<kbd>Esc</kbd>+<kbd>/</kbd> or <kbd>Ctl</kbd>+<kbd>R</kbd>) will not remove command from current shell history (line editing limitation), but the `$HISTFILE` will be purged from the command.  
 
 When deleting history in `$HISTFILE` using redo bind key, set the following options to ensure the history is not written later in `$HISTFILE` by shell.
+
 * zsh options to set :
   ```zsh
   setopt appendhistory
@@ -59,6 +61,7 @@ When deleting history in `$HISTFILE` using redo bind key, set the following opti
   shopt -s histappend cmdlist
   PROMPT_COMMAND='history -a'
   ```
+
 ## limitations
 
 * zsh on ubuntu 22 : in vi mode, to have <kbd>Esc</kbd>+<kbd>/</kbd> correctly binded, you need to put in `~/.zshenv`:
