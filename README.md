@@ -1,3 +1,5 @@
+[![bash](https://img.shields.io/badge/shell-bash%20zsh%20-blue.svg)]()
+
 # redo
 bash/zsh interactive history menu / autocompletion
 replacement for bash/zsh <kbd>Ctl</kbd><kbd>R</kbd> and <kbd>Esc</kbd><kbd>/</kbd> to search in history and re-execute/re-edit commands.
