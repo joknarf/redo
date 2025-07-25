@@ -270,8 +270,11 @@ function _items_split
   [ "$_nsel" ] && _items="${_aitems[$_nsel]}"
   _nsel=1
   IFS=$'\n'
+  # disable globbing to prevent filenames expansion to cwd filenames
+  set -f
   # ZSH array index starts at 1
   [ "$ZSH_VERSION" ] && _aitems=( ${=_items} ) || { _aitems=( _ $_items ); unset '_aitems[0]'; }
+  set +f
   IFS=$' \t\n'
 }
 
