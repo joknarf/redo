@@ -29,10 +29,10 @@ Then on command line:
 
 |key                             | action                                                |
 |--------------------------------|-------------------------------------------------------|
-|<kbd>⇩</kbd>                    | select next item                                      | 
-|<kbd>⇧</kbd>                    | select prev item                                      |
-|<kbd>End</kbd>/<kbd>⇨</kbd>     | select last item                                      |
-|<kbd>Home</kbd>/<kbd>⇦</kbd>    | select first item                                     | 
+|<kbd>▼</kbd>                    | select next item                                      | 
+|<kbd>▲</kbd>                    | select prev item                                      |
+|<kbd>End</kbd>/<kbd>▶</kbd>     | select last item                                      |
+|<kbd>Home</kbd>/<kbd>◀</kbd>    | select first item                                     | 
 |<kbd>PgUp</kbd>/<kbd>Ctl</kbd><kbd>F</kbd>| next page                                   |
 |<kbd>PgDn</kbd>/<kbd>Ctl</kbd><kbd>B</kbd>| previous page                               |
 |<kbd>Esc</kbd>                  | exit                                                  |
