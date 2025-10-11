@@ -457,8 +457,10 @@ function selector
     shift 2
   done
   _stty_ori=$(stty -g 2>/dev/null)
+  trap '' INT
   stty intr ''
   LC_ALL=$__selector_lc _domenu "$prompt" "$filter" >&2
+  trap - INT
   stty $_stty_ori 2>/dev/null
   unset _items _maxlines _autofilter _keufunc _sel_option
   [ "$selected" ] && printf "%s" "$selected" && return 0
