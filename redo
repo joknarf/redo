@@ -83,8 +83,7 @@ _redow() {
 
 # Define a function to replace the current word
 _redob() {
-    local line="$READLINE_LINE"
-    READLINE_LINE=$(_redo_selector "$line")
+    READLINE_LINE=$(_redo_selector "$READLINE_LINE")
     READLINE_POINT=${#READLINE_LINE}
 }
 
@@ -180,16 +179,6 @@ _redo_binds
 # Icons for -o filenames, can be overriden using env variables to fit terminal font
 : ${SELECTOR_FOLDER_ICON:=} # 🖿 🗀 📁 📂 🖿         
 : ${SELECTOR_FILE_ICON:=} #  🗎            🗋 🖹  
-
-
-# no proper way to restore tty on trap
-function _ctrl_c
-{
-  [ "$ZSH_VERSION" ] && {
-    tput cuu1 >&2
-    tput el >&2
-  }
-}
 
 function _menuprompt
 {
@@ -468,9 +457,8 @@ function selector
     shift 2
   done
   _stty_ori=$(stty -g 2>/dev/null)
-  trap _ctrl_c INT
+  stty intr ''
   LC_ALL=$__selector_lc _domenu "$prompt" "$filter" >&2
-  trap - INT
   stty $_stty_ori 2>/dev/null
   unset _items _maxlines _autofilter _keufunc _sel_option
   [ "$selected" ] && printf "%s" "$selected" && return 0
