@@ -458,7 +458,7 @@ function selector
   done
   _stty_ori=$(stty -g 2>/dev/null)
   trap '' INT
-  stty intr ''
+  stty intr '' 2>/dev/null
   LC_ALL=$__selector_lc _domenu "$prompt" "$filter" >&2
   trap - INT
   stty $_stty_ori 2>/dev/null
