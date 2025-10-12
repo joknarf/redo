@@ -180,6 +180,15 @@ _redo_binds
 : ${SELECTOR_FOLDER_ICON:=} # 🖿 🗀 📁 📂 🖿         
 : ${SELECTOR_FILE_ICON:=} #  🗎            🗋 🖹  
 
+# trap for zsh as stty intr not avail in zle context
+function _ctrl_c
+{
+  [ "$ZSH_VERSION" ] && {
+    tput cuu1 >&2
+    tput el >&2
+  }
+}
+
 function _menuprompt
 {
   typeset form filter="${3:-${_aitems[$_nsel]}}" nb="$_nsel/$2 " pl=""
@@ -457,7 +466,7 @@ function selector
     shift 2
   done
   _stty_ori=$(stty -g 2>/dev/null)
-  trap '' INT
+  trap _ctrl_c INT
   stty intr '' 2>/dev/null
   LC_ALL=$__selector_lc _domenu "$prompt" "$filter" >&2
   trap - INT
