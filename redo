@@ -183,15 +183,6 @@ _redo_binds
 : ${SELECTOR_FOLDER_ICON:=} # 🖿 🗀 📁 📂 🖿         
 : ${SELECTOR_FILE_ICON:=} #  🗎            🗋 🖹  
 
-# trap for zsh as stty intr not avail in zle context
-function _ctrl_c
-{
-  [ "$ZSH_VERSION" ] && {
-    tput cuu1 >&2
-    tput el >&2
-  }
-}
-
 function _menuprompt
 {
   typeset form filter="${3:-${_aitems[$_nsel]}}" nb="$_nsel/$2 " pl=""
@@ -315,7 +306,7 @@ function _domenu
   }
   _items_ori="$_items"
   tput civis
-  stty -echo 2>/dev/null
+  stty -echo </dev/tty 2>/dev/null
   printf "\e[?7l" # nowrap
   : ${LINES:=$(tput lines)}
   [ "$_maxlines" -gt 2 ] || unset _maxlines
@@ -468,12 +459,10 @@ function selector
     esac
     shift 2
   done
-  _stty_ori=$(stty -g 2>/dev/null)
-  trap _ctrl_c INT
-  stty intr '' 2>/dev/null
+  _stty_ori=$(stty -g </dev/tty 2>/dev/null)
+  stty intr '' </dev/tty 2>/dev/null
   LC_ALL=$__selector_lc _domenu "$prompt" "$filter" >&2
-  trap - INT
-  stty $_stty_ori 2>/dev/null
+  stty $_stty_ori </dev/tty 2>/dev/null
   unset _items _maxlines _autofilter _keufunc _sel_option
   [ "$selected" ] && printf "%s" "$selected" && return 0
   return 1
