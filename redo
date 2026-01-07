@@ -66,7 +66,7 @@ _redo_key()
 _redo_selector()
 {
   typeset _redo _hist _ps1 t l nl=$'\n'
-  [[ "$BASH_VERSION" = 4.[2-9].* ]] && tput cuu1 >&2 # 4.2+
+  [[ "$BASH_VERSION" = 4.[3-9].* ]] && tput cuu1 >&2 # 4.3+
   [ "$BASH" ] && tput el >&2 && printf '%s' "$1" >&2
   printf "\n" >&2
   _redo="$(selector -p redo -m 10 -k _redo_key -i "$(_get_hist |grep -F -- "$1" 2>/dev/null)" || printf "%s" "$1")"
