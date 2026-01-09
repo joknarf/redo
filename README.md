@@ -6,18 +6,13 @@
 bash/zsh interactive history menu / autocompletion
 replacement for bash/zsh <kbd>Ctl</kbd><kbd>R</kbd> and <kbd>Esc</kbd><kbd>/</kbd> to search in history and re-execute/re-edit commands.
 
-## usage
+## demo
 
-```shell
-$ git clone https://github.com/joknarf/redo
-$ source redo/redo
-```
-or direct source from github repository:
-```shell
-$ source <(curl -Ls https://raw.githubusercontent.com/joknarf/redo/main/redo)
-```
+![redo](https://github.com/joknarf/redo/assets/10117818/125a2e72-0a89-4c67-bac6-2276813cff68)
 
-Then on command line:  
+## features
+
+on command line:  
 
 * <kbd>Shift</kbd><kbd>Tab</kbd> or <kbd>Esc</kbd><kbd>/</kbd> or <kbd>Ctl</kbd><kbd>R</kbd> to access history menu
 * you can put pattern on command line + <kbd>Shift</kbd><kbd>Tab</kbd> or <kbd>Esc</kbd><kbd>/</kbd> or <kbd>Ctl</kbd><kbd>R</kbd> to filter and access history menu
@@ -25,7 +20,22 @@ Then on command line:
 * select command line with arrows or enter number and press enter
 * you can then edit the command line before execution
 
-![redo](https://github.com/joknarf/redo/assets/10117818/125a2e72-0a89-4c67-bac6-2276813cff68)
+## install
+
+You can use a shell plugin manager like the famous [thefly](https://github.com/joknarf/thefly) :  
+```
+fly add joknarf/redo
+```
+or just clone it:
+```shell
+git clone https://github.com/joknarf/redo
+source redo/redo
+```
+or to test, source it from github repository:
+```shell
+source <(curl -Ls https://raw.githubusercontent.com/joknarf/redo/main/redo)
+```
+
 
 ## keys in menu
 
