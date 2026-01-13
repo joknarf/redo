@@ -186,8 +186,19 @@ _redo_binds
 # Author: Franck Jouvanceau
 
 # Icons for -o filenames, can be overriden using env variables to fit terminal font
-: ${SELECTOR_FOLDER_ICON:=} # 🖿 🗀 📁 📂 🖿         
+: ${SELECTOR_FOLDER_ICON:=} # 🖿 🗀 📁 📂 🖿        
 : ${SELECTOR_FILE_ICON:=} #  🗎            🗋 🖹  
+: ${SELECTOR_CASEI:=false}
+
+# split _items lines to index 1 array _aitems
+type mapfile >/dev/null 2>&1 && _items2array() { mapfile -t -O 1 _aitems <<<"$_items"; } || {
+  [ "$ZSH_VERSION" ] && _items2array() { set -A _aitems ${(f)_items}; } || _items2array() {
+    # ksh/bash3
+    typeset o="$IFS"
+    IFS=$'\n'; set -f; _aitems=( _ $_items ); set +f; IFS="$o"
+    unset '_aitems[0]'
+  }
+}
 
 function _menuprompt
 {
@@ -200,23 +211,24 @@ function _menuprompt
   printf "\r"
 }
 
-function _showmenu 
+function _showmenu
 {
-  typeset prompt="$1" nsel="$2" nbitems="$3" filter="$4" item i min max sel lines icon fpath
+  typeset prompt="$1" filter="$4" item icon fpath sel
+  typeset -i nsel="$2" nbitems="$3" i min max lines w size
 
   _menuprompt "$prompt" "$nbitems" "$filter"
-  w=$nbitems;w=${#w}
+  w=${#nbitems}
   lines=${_maxlines:-$LINES}
-  [ $lines -ge $LINES ] && lines=$(($LINES-1))
-  min=$(($nsel-$lines+2))
+  [ $lines -ge $LINES ] && ((lines=LINES-1))
+  ((min=nsel-lines+2))
   [ "$min" -le 0 ] && min=1
-  max=$(($min+$lines-2))
+  ((max=min+lines-2))
   i=0
   sel="\n\e[30m\e[46m\e[97m %${w}s \e[0m\e[1;96m %s\e[0m"
   [ "$_powerline" = y ] && sel="\n\e[30m\e[46m\e[97m %${w}s \e[0m\e[36m\e[46m\e[49m\e[0m\e[1;96m%s\e[0m"
   while [ $i -lt $nbitems ]
   do
-    i=$((i + 1))
+    i=i+1
     item="${_aitems[$i]}"
     [[ $i -ge $min ]] || continue
     [[ $i -le $max ]] || break
@@ -224,32 +236,30 @@ function _showmenu
     [ "$_sel_option" = filenames ] && {
       [[ "$item" = \~/* ]] && fpath="$HOME/"${item#\~/} || fpath="$item"
       if [ -d "$fpath" ] ;then icon="$SELECTOR_FOLDER_ICON "
-      else [ -e "$fpath" -o -L "$fpath" ] && icon="$SELECTOR_FILE_ICON ";fi
+      else [[ -e "$fpath" || -L "$fpath" ]] && icon="$SELECTOR_FILE_ICON ";fi
     }
-    if [[ $nsel == "$i" ]]; then 
+    if [[ $nsel == "$i" ]]; then
       printf "$sel" $i "$icon$item"
     else
       printf "\n\e[32m %${w}s  \e[94m%s\e[0m" $i "$icon$item"
     fi
     tput el #clear end of line
   done
-  size=$((nbitems+1))
-  [ "$size" -gt $lines ] && size=$lines
+  size=$nbitems
+  [ "$size" -ge $lines ] && ((size=lines-1))
   # back to top of menu
   tput ed
-  i=1;while [ $i -lt $size ];do
-    echo cuu1
-    i=$((i + 1))
-  done | tput -S
+  tput cuu $size
   printf "\r" # begin of line
 }
 
 function _select
 {
-  typeset prompt="$1" newsel="$2" nbitems="$3" filter="$4" lines
+  typeset prompt="$1" newsel="$2" nbitems="$3" filter="$4"
+  typeset -i lines
 
   lines=${_maxlines:-$LINES}
-  [ $lines -ge $LINES ] && lines=$(($LINES-1))
+  [ $lines -ge $LINES ] && ((lines=LINES-1))
   _nsel=$(($newsel))
   [ $_nsel -lt 1 ] && _nsel=1
   [ $_nsel -ge $nbitems ] && _nsel=$nbitems
@@ -258,22 +268,16 @@ function _select
 
 function _items_split
 {
-  typeset filter="$1" item IFS=$' \t\n'
-
+  typeset filter="$1" item IFS=$' \t\n' gopt=""
+  [ "$SELECTOR_CASEI" = true ] && gopt="-i"
   [ "$filter" ] && {
     _nsel=""
     [ "$filter" = . ] && filter=""
-    [[ "$filter" =~ ^[0-9]+$ ]] && _nsel=$filter || _items="$(printf "%s" "$_items" |grep -F -- "$filter" 2>/dev/null|uniq)"
+    [[ "$filter" =~ ^[0-9]+$ ]] && _nsel=$filter || _items="$(printf "%s" "$_items" |grep -F $gopt -- "$filter" 2>/dev/null|uniq)"
   }
   [ "$_nsel" ] && _items="${_aitems[$_nsel]}"
   _nsel=1
-  IFS=$'\n'
-  # disable globbing to prevent filenames expansion to cwd filenames
-  set -f
-  # ZSH array index starts at 1
-  [ "$ZSH_VERSION" ] && _aitems=( ${=_items} ) || { _aitems=( _ $_items ); unset '_aitems[0]'; }
-  set +f
-  IFS=$' \t\n'
+  _items2array
 }
 
 function _readkey
@@ -283,8 +287,8 @@ function _readkey
   IFS= read -rs${o}1 key
   [ "$key" = $'\x1b' ] && key="" && while true
   do
-    k=""s
-    LC_NUERIC=C read -rs${o}1 -t $tmout k 2>/dev/null # LC_NUMERIC=C for old ksh
+    k=""
+    LC_NUMERIC=C read -rs${o}1 -t $tmout k 2>/dev/null # LC_NUMERIC=C for old ksh
     [ $? = 1 ] && [ "$BASH" ] && read -rs${o}1 -t 1 k # old bash
     [ ! "$k" ] && key=${key:-$'\x1b'} && break
     key+="$k"
@@ -295,9 +299,10 @@ function _readkey
   printf "%s" "$key"
 }
 
-function _domenu 
+function _domenu
 {
   typeset prompt="$1" filter="$2" nbitems o=n
+  unset _nsel
 
   printf "\r"
   tput el
@@ -307,7 +312,6 @@ function _domenu
   nbitems=${#_aitems[@]}
   [ "$nbitems" = 1 ] && {
     selected="${_aitems[1]}"
-    unset _nsel
     return 0
   }
   _items_ori="$_items"
@@ -323,7 +327,7 @@ function _domenu
     [ "$_keyfunc" ] && { # custom key control
       $_keyfunc "$k" # 0: already managed / 1: managed exit / 2: default / 3: skip default
       case "$?" in
-        0) 
+        0)
           _items_split "."
           filter=""
           nbitems=${#_aitems[@]}
@@ -366,7 +370,7 @@ function _domenu
         ;;
       $'\xf8') #meta (macos)
         break;;
-      [[:graph:]]|" ") #text [a-zA-Z0-9/_?*\(\)\ .-]) 
+      [[:graph:]]|" ") #text [a-zA-Z0-9/_?*\(\)\ .-])
         filter="$filter$k"
         [ "$_autofilter" = y ] && [[ ! "$filter" =~ ^[0-9]+$ ]] && {
           _items_split "$filter"
@@ -390,7 +394,7 @@ function _domenu
         _showmenu "$prompt" "$_nsel" "$nbitems" "$filter";;
       $'\x0d'|''|$'\n') # enter
         [[ "$filter" =~ ^[0-9]+$ ]] && selected="${_aitems[$filter]}" || selected="${_aitems[$_nsel]}"
-        break;;     
+        break;;
       $'\t') # tab
         _items_split "$filter"
         [ ! "$_items" ] && break
@@ -403,9 +407,6 @@ function _domenu
       *) break;
     esac
   done
-  unset _nsel
-  unset _aitems
-  unset _items_ori
   printf "\e[?7h" #wrap
   tput ed
   tput cnorm
@@ -414,6 +415,7 @@ function _domenu
 function selector
 {
   typeset prompt filter
+  unset _items _maxlines _autofilter _keyfunc _sel_option _nsel _aitems _items_ori
   prompt="select"
   selected=""
   _maxlines=0
@@ -465,11 +467,12 @@ function selector
     esac
     shift 2
   done
+  _aitems=( ) # ksh bug
   _stty_ori=$(stty -g </dev/tty 2>/dev/null)
   stty intr '' </dev/tty 2>/dev/null
   LC_ALL=$__selector_lc _domenu "$prompt" "$filter" >&2
   stty $_stty_ori </dev/tty 2>/dev/null
-  unset _items _maxlines _autofilter _keufunc _sel_option
+  unset _items _maxlines _autofilter _keyfunc _sel_option _nsel _aitems _items_ori
   [ "$selected" ] && printf "%s" "$selected" && return 0
   return 1
 }
