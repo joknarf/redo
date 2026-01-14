@@ -72,7 +72,7 @@ _redo_selector()
   printf "%s" "${_redo//↵ /$nl}"
   tput cuu1 >&2
   # bash 3/4 bug repeating prompt/command
-  [[ "$BASH_VERSION" = [3-4].* ]] && {
+  [[ "$BASH_VERSION" = @(3.*|4.[0-3].*) ]] && {
     t=${PS1//$'\n'/}
     l=$(( ${#PS1} - ${#t} ))
     [ "$l" -gt 0 ] && tput cuu $l >&2
