@@ -191,7 +191,7 @@ _redo_binds
 : ${SELECTOR_CASEI:=false}
 
 # split _items lines to index 1 array _aitems
-type mapfile >/dev/null 2>&1 && _items2array() { mapfile -t -O 1 _aitems <<<"$_items"; } || {
+type mapfile >/dev/null 2>&1 && _items2array() { _aitems=(); mapfile -t -O 1 _aitems <<<"$_items"; } || {
   [ "$ZSH_VERSION" ] && _items2array() { set -A _aitems ${(f)_items}; } || _items2array() {
     # ksh/bash3
     typeset o="$IFS"
