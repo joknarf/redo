@@ -1,6 +1,11 @@
 # redo bash command history
 # Author : Franck Jouvanceau
 #
+: ${REDO_USER_CHAR:="$ps1_user_char"} #nerpd
+: ${REDO_ROOT_CHAR:="$ps1_root_char"} #nerdp
+: ${REDO_USER_CHAR:="$"}
+: ${REDO_ROOT_CHAR:="#"}
+
 _get_hist()
 {
   typeset _hist
@@ -87,10 +92,10 @@ _redow() {
   zle vi-insert
 }
 
-# Define a function to replace the current word
+# bash bind -x 
 _redob() {
     typeset _ps1
-    [ "$UID" = 0 ] && _ps1='#' || _ps1='$'
+    [ "$UID" = 0 ] && _ps1="$REDO_ROOT_CHAR" || _ps1="$REDO_USER_CHAR"
     printf "%s " "$_ps1" >&2
     READLINE_LINE=$(_redo_selector "$READLINE_LINE")
     READLINE_POINT=${#READLINE_LINE}
@@ -217,6 +222,15 @@ function _tput {
         # -------- Cursor visibility --------
         civis) printf '\e[?25l' ;;
         cnorm) printf '\e[?25h' ;;
+        # -------- tty size -----------------
+        lines)
+            [ ! "$LINES" ] && LINES=$(stty size </dev/tty) && LINES=${LINES% *}
+            printf '%s\n' "${LINES:-24}"
+            ;;
+        cols)
+            [ ! "$COLUMNS" ] && COLUMNS=$(stty size </dev/tty) && COLUMNS=${COLUMNS#* }
+            printf '%s\n' "${COLUMNS:-80}"
+            ;;
         *)  tput "$@" ;;
     esac
 }
@@ -347,7 +361,7 @@ function _domenu
   _tput civis
   stty -echo </dev/tty 2>/dev/null
   printf "\e[?7l" # nowrap
-  : ${LINES:=$(tput lines)}
+  : ${LINES:=$(_tput lines)}
   [ "$_maxlines" -gt 2 ] || unset _maxlines
   _showmenu "$prompt" "$_nsel" "$nbitems" "$filter"
   while true
