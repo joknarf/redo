@@ -18,7 +18,7 @@ _get_hist()
     BEGIN{ done[""]=1 }
     $0 in done {next}
     {done[$0]=1;sub("\n$","");gsub("\n",ret);print $0}
-  ' RS="\n*+\t " ret='↵ '  
+  ' RS="\n*\t " ret='↵ '
 }
 
 _redo_del()
