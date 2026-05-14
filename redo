@@ -208,7 +208,7 @@ _redo_binds
 $SELECTOR_USE_TPUT && alias _tput=tput
 type gnustty >/dev/null 2>&1 && _sel_stty='gnustty' || _sel_stty='stty'
 
-function _tput {
+_tput() {
     case "$1" in
         # -------- Erase eol/eos ----------
         el)  printf '\e[K' ;;
@@ -249,7 +249,7 @@ type mapfile >/dev/null 2>&1 && _items2array() { _aitems=(); mapfile -t -O 1 _ai
   }
 }
 
-function _menuprompt
+_menuprompt()
 {
   typeset filter="${3:-${_aitems[$_nsel]%%$'\t'*}}" nb="$_nsel/$2 "
   printf "\r"
@@ -258,14 +258,15 @@ function _menuprompt
   printf "\r"
 }
 
-function _showmenu
+_showmenu()
 {
   typeset prompt="$1" filter="$4" item icon fpath
-  typeset -i nsel="$2" nbitems="$3" i min max maxw lines w size
+  typeset -i nsel="$2" nbitems="$3" i min max maxiw maxw maxcw lines w size
 
   _menuprompt "$prompt" "$nbitems" "$filter"
   lines=${_maxlines:-$LINES}
   ((lines >= LINES)) && ((lines=LINES-1))
+
   ((min=nsel-lines+2))
   ((min <= 0)) && min=1
   ((max=min+lines-2))
@@ -278,6 +279,10 @@ function _showmenu
   done
   ((maxw+=2))
   w=${#nbitems}
+  ((maxiw=COLUMNS-w-4))
+  ((maxiw<0)) && maxiw=0
+  ((maxcw=maxiw-maxw))
+  ((maxcw<0)) && maxcw=0
   for ((i=min;i<=max;i++))
   do
     item="${_aitems[$i]}"
@@ -293,9 +298,9 @@ function _showmenu
       else [[ -e "$fpath" || -L "$fpath" ]] && icon="$SELECTOR_FILE_ICON ";fi
     }
     if [[ $nsel == "$i" ]]; then 
-      printf "$disp_item_sel" $w $i $maxw "$icon$item" "$comment"
+      printf "$disp_item_sel" $w $i $maxw "$icon${item:0:$maxiw}" "${comment:0:$maxcw}"
     else
-      printf "$disp_item" $w $i $maxw "$icon$item" "$comment"
+      printf "$disp_item" $w $i $maxw "$icon${item:0:$maxiw}" "${comment:0:$maxcw}"
     fi
     _tput el #clear end of line
   done
@@ -307,7 +312,7 @@ function _showmenu
   printf "\r" # begin of line
 }
 
-function _select
+_select()
 {
   typeset prompt="$1" newsel="$2" nbitems="$3" filter="$4"
   typeset -i lines
@@ -320,7 +325,7 @@ function _select
   _showmenu "$prompt" "$_nsel" "$nbitems" "$filter"
 }
 
-function _items_split
+_items_split()
 {
   typeset filter="$1" item IFS=$' \t\n' gopt=""
   [ "$SELECTOR_CASEI" = true ] && gopt="-i"
@@ -334,7 +339,7 @@ function _items_split
   _items2array
 }
 
-function _readkey
+_readkey()
 {
   typeset o=${1:-n} k tmout=0.001
   [ "$KSH_VERSION" ] && tmout=0.01
@@ -353,7 +358,7 @@ function _readkey
   #printf "%s" "$key"
 }
 
-function _domenu 
+_domenu()
 {
   typeset prompt="$1" filter="$2" nbitems o=n 
   unset _nsel
@@ -373,7 +378,8 @@ function _domenu
   $_sel_stty -echo </dev/tty 2>/dev/null
   printf "\e[?7l" # nowrap
   : "${LINES:=$(_tput lines)}"
-  [ "$_maxlines" -gt 2 ] || unset _maxlines
+  : "${COLUMNS:=$(_tput cols)}"
+  ((_maxlines > 2)) || unset _maxlines
   _showmenu "$prompt" "$_nsel" "$nbitems" "$filter"
   while true
   do
@@ -457,7 +463,7 @@ function _domenu
   _tput cnorm
 }
 
-function selector
+selector()
 {
   typeset prompt filter
   typeset bg="\e[48;2;" fg="\e[38;2;" pl=""
