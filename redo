@@ -186,6 +186,7 @@ _redo_binds
 
 # selector from https://ghithub.com/joknarf/selector
 
+#!/bin/bash
 # selector menu
 # Author: Franck Jouvanceau
 
@@ -361,7 +362,7 @@ _readkey()
 _domenu()
 {
   typeset prompt="$1" filter="$2" nbitems o=n 
-  unset _nsel
+  _nsel=''
 
   printf "\r"
   _tput el
@@ -379,7 +380,7 @@ _domenu()
   printf "\e[?7l" # nowrap
   : "${LINES:=$(_tput lines)}"
   : "${COLUMNS:=$(_tput cols)}"
-  ((_maxlines > 2)) || unset _maxlines
+  ((_maxlines > 2)) || _maxlines=''
   _showmenu "$prompt" "$_nsel" "$nbitems" "$filter"
   while true
   do
@@ -450,7 +451,7 @@ _domenu()
       $'\x0c') # Ctl-L => refresh
         _showmenu "$prompt" "$_nsel" "$nbitems" "$filter";;
       $'\x01') # Ctl-A => all
-        unset _maxlines
+        _maxlines=''
         _showmenu "$prompt" "$_nsel" "$nbitems" "$filter";;
       $'\x0d'|''|$'\n'|$'\t') # enter
         [[ "$filter" =~ ^[0-9]+$ ]] && selected="${_aitems[$filter]}" || selected="${_aitems[$_nsel]}"
@@ -468,10 +469,10 @@ function selector
   typeset prompt filter
   typeset bg="\e[48;2;" fg="\e[38;2;" pl=""
   typeset wfg="$fg${SELECTOR_COL_TEXT}m"
-  typeset _items _maxlines _autofilter _keyfunc _sel_option _nsel _items_ori disp_item_sel disp_item disp_form key
-  prompt="select"
-  selected=""
-  _maxlines=0
+  typeset _items _aitems _maxlines _autofilter _keyfunc _sel_option _nsel _items_ori disp_item_sel disp_item disp_form key 
+  prompt='select'
+  selected=''
+  _maxlines=''
   _autofilter=y
   _powerline="$SELECTOR_POWERLINE"
   _keyfunc=""
@@ -529,7 +530,6 @@ function selector
   $_sel_stty intr '' </dev/tty 2>/dev/null
   LC_ALL=$__selector_lc _domenu "$prompt" "$filter" >&2
   $_sel_stty "$_stty_ori" </dev/tty 2>/dev/null
-  unset _aitems
   selected="${selected%%$'\t'*}"
   [ "$selected" ] && printf "%s" "$selected" && return 0
   return 1
