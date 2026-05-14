@@ -468,7 +468,7 @@ function selector
   typeset prompt filter
   typeset bg="\e[48;2;" fg="\e[38;2;" pl=""
   typeset wfg="$fg${SELECTOR_COL_TEXT}m"
-  typeset _items _maxlines _autofilter _keyfunc _sel_option _nsel _aitems _items_ori disp_item_sel disp_item disp_form key filter
+  typeset _items _maxlines _autofilter _keyfunc _sel_option _nsel _items_ori disp_item_sel disp_item disp_form key
   prompt="select"
   selected=""
   _maxlines=0
@@ -529,6 +529,7 @@ function selector
   $_sel_stty intr '' </dev/tty 2>/dev/null
   LC_ALL=$__selector_lc _domenu "$prompt" "$filter" >&2
   $_sel_stty "$_stty_ori" </dev/tty 2>/dev/null
+  unset _aitems
   selected="${selected%%$'\t'*}"
   [ "$selected" ] && printf "%s" "$selected" && return 0
   return 1
