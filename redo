@@ -31,8 +31,8 @@ _redo_del()
     if (b) gsub(ret,"\n",todel)
     else gsub(ret, "\\\n",todel)
     while (ind = index($0, todel)) {
-      print(substr($0, 1, ind)-1)
-      $0 = substr($0, ind+length(todel)-1)
+      print(substr($0, 1, ind))
+      $0 = substr($0, ind+length(todel))
     }
   }1' ret='↵ ' RS='\003' ORS='' b="$BASH" todel="\n${todel//\\/\\\\}\n" "${HISTFILE:=~/.bash_history}" >~/.redo_history.tmp && mv ~/.redo_history.tmp "${HISTFILE:=~/.bash_history}" 
 
@@ -260,7 +260,7 @@ _menuprompt()
 
 _showmenu()
 {
-  typeset prompt="$1" filter="$4" item icon fpath
+  typeset prompt="$1" filter="$4" item icon fpath comment
   typeset -i nsel="$2" nbitems="$3" i min max maxiw maxw maxcw lines w size
 
   _menuprompt "$prompt" "$nbitems" "$filter"
@@ -463,12 +463,12 @@ _domenu()
   _tput cnorm
 }
 
-selector()
+function selector
 {
   typeset prompt filter
   typeset bg="\e[48;2;" fg="\e[38;2;" pl=""
   typeset wfg="$fg${SELECTOR_COL_TEXT}m"
-  unset _items _maxlines _autofilter _keyfunc _sel_option _nsel _aitems _items_ori
+  typeset _items _maxlines _autofilter _keyfunc _sel_option _nsel _aitems _items_ori disp_item_sel disp_item disp_form key filter
   prompt="select"
   selected=""
   _maxlines=0
@@ -524,12 +524,11 @@ selector()
   disp_item_sel="\n$bg${SELECTOR_COL_ARROW}m$wfg %*s $fg${SELECTOR_COL_ARROW}m\e[49m$pl$fg${SELECTOR_COL_SELECTED}m%-*s$fg${SELECTOR_COL_COMSEL}m%s\e[0m"
   disp_item="\n$fg${SELECTOR_COL_NUM}m %*s  $fg${SELECTOR_COL_ITEM}m%-*s$fg${SELECTOR_COL_COMMENT}m%s\e[0m"
   disp_form="$bg${SELECTOR_COL_PROMPT}m$wfg %s $fg${SELECTOR_COL_PROMPT}m$bg${SELECTOR_COL_TOTAL}m$pl$wfg %s$fg${SELECTOR_COL_TOTAL}m\e[49m$pl\e[0m %s"
-  _aitems=( ) # ksh bug
-  _stty_ori=$($_sel_stty -g </dev/tty 2>/dev/null)
+  _aitems=(); set -A _aitems 2>/dev/null # ksh bug
+  typeset _stty_ori=$($_sel_stty -g </dev/tty 2>/dev/null)
   $_sel_stty intr '' </dev/tty 2>/dev/null
   LC_ALL=$__selector_lc _domenu "$prompt" "$filter" >&2
   $_sel_stty "$_stty_ori" </dev/tty 2>/dev/null
-  unset _items _maxlines _autofilter _keyfunc _sel_option _nsel _aitems _items_ori disp_item_sel disp_item disp_form key
   selected="${selected%%$'\t'*}"
   [ "$selected" ] && printf "%s" "$selected" && return 0
   return 1
