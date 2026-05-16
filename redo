@@ -378,7 +378,6 @@ _domenu()
   while true
   do
     _readkey $o #$key
-    echo "$key" >>/tmp/k1
     [ "$_keyfunc" ] && { # custom key control
       $_keyfunc "$key" # 0: already managed / 1: managed exit / 2: default / 3: skip default
       case "$?" in
