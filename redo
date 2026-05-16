@@ -185,8 +185,6 @@ _redo_binds()
 _redo_binds
 
 # selector from https://ghithub.com/joknarf/selector
-
-#!/bin/bash
 # selector menu
 # Author: Franck Jouvanceau
 
@@ -252,23 +250,22 @@ type mapfile >/dev/null 2>&1 && _items2array() { _aitems=(); mapfile -t -O 1 _ai
 
 _menuprompt()
 {
-  typeset filter="${3:-${_aitems[$_nsel]%%$'\t'*}}" nb="$_nsel/$2 "
+  typeset filt="${filter:-${_aitems[$_nsel]%%$'\t'*}}"
   printf "\r"
-  printf "$disp_form" "$1" "$nb" "$filter"
+  printf "$disp_form" "$prompt" "$_nsel/$nbitems" "$filt"
   _tput el
   printf "\r"
 }
 
 _showmenu()
 {
-  typeset prompt="$1" filter="$4" item icon fpath comment
-  typeset -i nsel="$2" nbitems="$3" i min max maxiw maxw maxcw lines w size
+  typeset item icon fpath comment
+  typeset -i i min max maxiw maxw maxcw lines w size
 
-  _menuprompt "$prompt" "$nbitems" "$filter"
+  _menuprompt
   lines=${_maxlines:-$LINES}
   ((lines >= LINES)) && ((lines=LINES-1))
-
-  ((min=nsel-lines+2))
+  ((min=_nsel-lines+2))
   ((min <= 0)) && min=1
   ((max=min+lines-2))
   ((max > nbitems)) && max=$nbitems
@@ -298,7 +295,7 @@ _showmenu()
       if [ -d "$fpath" ] ;then icon="$SELECTOR_FOLDER_ICON "
       else [[ -e "$fpath" || -L "$fpath" ]] && icon="$SELECTOR_FILE_ICON ";fi
     }
-    if [[ $nsel == "$i" ]]; then 
+    if ((_nsel == i)); then
       printf "$disp_item_sel" $w $i $maxw "$icon${item:0:$maxiw}" "${comment:0:$maxcw}"
     else
       printf "$disp_item" $w $i $maxw "$icon${item:0:$maxiw}" "${comment:0:$maxcw}"
@@ -306,7 +303,7 @@ _showmenu()
     _tput el #clear end of line
   done
   size=$nbitems
-  [ "$size" -ge $lines ] && ((size=lines-1))
+  ((size >= lines)) && ((size=lines-1))
   # back to top of menu
   _tput ed
   _tput cuu $size
@@ -315,25 +312,22 @@ _showmenu()
 
 _select()
 {
-  typeset prompt="$1" newsel="$2" nbitems="$3" filter="$4"
-  typeset -i lines
+  typeset newsel="$1"
 
-  lines=${_maxlines:-$LINES}
-  ((lines >= LINES)) && ((lines=LINES-1))
   ((_nsel=newsel))
   ((_nsel <1 )) && _nsel=1
   ((_nsel >= nbitems)) && _nsel=$nbitems
-  _showmenu "$prompt" "$_nsel" "$nbitems" "$filter"
+  _showmenu
 }
 
 _items_split()
 {
-  typeset filter="$1" item IFS=$' \t\n' gopt=""
+  typeset filt="$1" gopt=""
   [ "$SELECTOR_CASEI" = true ] && gopt="-i"
-  [ "$filter" ] && {
-    _nsel=""
-    [ "$filter" = . ] && filter=""
-    _items="$(\grep -F $gopt -- "$filter" 2>/dev/null <<<"$_items"|uniq)"
+  [ "$filt" ] && {
+    _nsel=''
+    [ "$filt" = . ] && filt=''
+    _items="$(\grep -F $gopt -- "$filt" 2>/dev/null <<<"$_items"|uniq)"
   }
   [ "$_nsel" ] && _items="${_aitems[$_nsel]}"
   _nsel=1
@@ -361,9 +355,8 @@ _readkey()
 
 _domenu()
 {
-  typeset prompt="$1" filter="$2" nbitems o=n 
+  typeset o=n _force_nsel
   _nsel=''
-
   printf "\r"
   _tput el
   [ "$ZSH_VERSION" ] && o=k
@@ -381,19 +374,20 @@ _domenu()
   : "${LINES:=$(_tput lines)}"
   : "${COLUMNS:=$(_tput cols)}"
   ((_maxlines > 2)) || _maxlines=''
-  _showmenu "$prompt" "$_nsel" "$nbitems" "$filter"
+  _showmenu
   while true
   do
     _readkey $o #$key
+    echo "$key" >>/tmp/k1
     [ "$_keyfunc" ] && { # custom key control
       $_keyfunc "$key" # 0: already managed / 1: managed exit / 2: default / 3: skip default
       case "$?" in
-        0) 
+        0)
           _items_split "."
           filter=""
           nbitems=${#_aitems[@]}
-          _select "$prompt" "${_force_nsel:-1}" "$nbitems" "$filter"
-          unset _force_nsel
+          _select "${_force_nsel:-1}"
+          _force_nsel=''
           continue;;
         1) break;;
         3) continue;;
@@ -401,17 +395,17 @@ _domenu()
     }
     case "$key" in
       '[A'|OA) #up
-        filter="";_select "$prompt" "_nsel-1" "$nbitems" "$filter";;
+        filter='';_select "_nsel-1";;
       '[B'|OB) #down
-        filter="";_select "$prompt" "_nsel+1" "$nbitems" "$filter";;
-      '[H'|'[D'|OD|'[1;5H'|'[1;2D') #home or [shift] arrowleft 
-        filter="";_select "$prompt" "1" "$nbitems" "$filter";;
+        filter='';_select "_nsel+1";;
+      '[H'|'[D'|OD|'[1;5H'|'[1;2D') #home or [shift] arrowleft
+        filter='';_select "1";;
       '[F'|'[C'|OC|'[1;5F'|'[1;2C') #end or [shift] arrowright
-        filter="";_select "$prompt" "nbitems" "$nbitems" "$filter";;
+        filter='';_select "nbitems";;
       '[6~'|$'\x06'|'[1;2B') #pagedn Ctl-F shift-down
-        filter="";_select "$prompt" "_nsel+lines-1" "$nbitems" "$filter";;
+        filter='';_select "_nsel+lines-1";;
       '[5~'|$'\x02'|'[1;2A') #pageup Ctl-B shift-up
-        filter="";_select "$prompt" "_nsel-lines+1" "$nbitems" "$filter";;
+        filter='';_select "_nsel-lines+1";;
       '[19~'|$'\x04'|'[3~') # F8 Ctl-D delete
         unset "_aitems[$_nsel]"
         [ "$ZSH_VERSION" ] && _aitems=("${(@)_aitems[1,$_nsel-1]}" "${(@)_aitems[$_nsel+1,$nbitems]}") ||\
@@ -419,21 +413,20 @@ _domenu()
         nbitems=${#_aitems[@]}
         _tput ed
         [ "$nbitems" = 0 ] && break
-        filter="";_select "$prompt" "$_nsel" "$nbitems" "$filter";;
+        filter='';_select "$_nsel";;
       $'\x7f'|$'\x08') #backspace
-        filter=${filter%?}
+        filter="${filter%?}"
         _items="$_items_ori"
-        _nsel=""
+        _nsel=''
         _items_split "$filter"
         nbitems=${#_aitems[@]}
-        [ "$_autofilter" = y ] && _showmenu "$prompt" "$_nsel" "$nbitems" "$filter" || \
-          _menuprompt "$prompt" "$nbitems" "$filter"
+        [ "$_autofilter" = y ] && _showmenu || _menuprompt
         ;;
       $'\xf8') #meta (macos)
         break;;
-      [[:graph:]]|" ") #text [a-zA-Z0-9/_?*\(\)\ .-]) 
-        filter="$filter$key"
-        [ "$_autofilter" = y ] && [[ ! "$filter" =~ ^[0-9]+$ ]] && {
+      [[:graph:]]|" ") #text [a-zA-Z0-9/_?*\(\)\ .-])
+        filter+="$key"
+        [ "$_autofilter" = y ] && {
           _items_split "$filter"
           [ ! "$_items" ] && {
             printf "Not found !"
@@ -441,20 +434,20 @@ _domenu()
             read -rs"$o"1 -t 0.5 key 2>/dev/null
             _items="$_items_ori"
             filter="${filter%?}"
-            _nsel=""
+            _nsel=''
             _items_split "$filter"
           }
           nbitems=${#_aitems[@]}
-          _showmenu "$prompt" "$_nsel" "$nbitems" "$filter"
+          _showmenu
         }
-        _menuprompt "$prompt" "$nbitems" "$filter";;
+        _menuprompt;;
       $'\x0c') # Ctl-L => refresh
-        _showmenu "$prompt" "$_nsel" "$nbitems" "$filter";;
+        _showmenu;;
       $'\x01') # Ctl-A => all
         _maxlines=''
-        _showmenu "$prompt" "$_nsel" "$nbitems" "$filter";;
+        _showmenu;;
       $'\x0d'|''|$'\n'|$'\t') # enter
-        [[ "$filter" =~ ^[0-9]+$ ]] && selected="${_aitems[$filter]}" || selected="${_aitems[$_nsel]}"
+        selected="${_aitems[$_nsel]}"
         break;;
       *) break;
     esac
@@ -469,7 +462,7 @@ function selector
   typeset prompt filter
   typeset bg="\e[48;2;" fg="\e[38;2;" pl=""
   typeset wfg="$fg${SELECTOR_COL_TEXT}m"
-  typeset _items _aitems _maxlines _autofilter _keyfunc _sel_option _nsel _items_ori disp_item_sel disp_item disp_form key 
+  typeset _items _aitems _maxlines _autofilter _keyfunc _sel_option _nsel _items_ori disp_item_sel disp_item disp_form key nbitems
   prompt='select'
   selected=''
   _maxlines=''
@@ -522,13 +515,13 @@ function selector
     shift 2
   done
   [ "$_powerline" = "y" ] || pl="►"
+  [ "$_items" ] || return 1
   disp_item_sel="\n$bg${SELECTOR_COL_ARROW}m$wfg %*s $fg${SELECTOR_COL_ARROW}m\e[49m$pl$fg${SELECTOR_COL_SELECTED}m%-*s$fg${SELECTOR_COL_COMSEL}m%s\e[0m"
   disp_item="\n$fg${SELECTOR_COL_NUM}m %*s  $fg${SELECTOR_COL_ITEM}m%-*s$fg${SELECTOR_COL_COMMENT}m%s\e[0m"
   disp_form="$bg${SELECTOR_COL_PROMPT}m$wfg %s $fg${SELECTOR_COL_PROMPT}m$bg${SELECTOR_COL_TOTAL}m$pl$wfg %s$fg${SELECTOR_COL_TOTAL}m\e[49m$pl\e[0m %s"
-  _aitems=(); set -A _aitems 2>/dev/null # ksh bug
   typeset _stty_ori=$($_sel_stty -g </dev/tty 2>/dev/null)
   $_sel_stty intr '' </dev/tty 2>/dev/null
-  LC_ALL=$__selector_lc _domenu "$prompt" "$filter" >&2
+  LC_ALL=$__selector_lc _domenu >&2
   $_sel_stty "$_stty_ori" </dev/tty 2>/dev/null
   selected="${selected%%$'\t'*}"
   [ "$selected" ] && printf "%s" "$selected" && return 0
