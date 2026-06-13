@@ -1,6 +1,7 @@
 # redo bash command history
 # Author : Franck Jouvanceau
 #
+# bash bind -x prefix
 : ${REDO_USER_CHAR:="$ps1_user_char"} #nerpd
 : ${REDO_ROOT_CHAR:="$ps1_root_char"} #nerdp
 : ${REDO_USER_CHAR:="$"}
@@ -31,8 +32,8 @@ _redo_del()
     if (b) gsub(ret,"\n",todel)
     else gsub(ret, "\\\n",todel)
     while (ind = index($0, todel)) {
-      print(substr($0, 1, ind))
-      $0 = substr($0, ind+length(todel))
+      print(substr($0, 1, ind-1))
+      $0 = substr($0, ind+length(todel)-1)
     }
   }1' ret='↵ ' RS='\003' ORS='' b="$BASH" todel="\n${todel//\\/\\\\}\n" "${HISTFILE:=~/.bash_history}" >~/.redo_history.tmp && mv ~/.redo_history.tmp "${HISTFILE:=~/.bash_history}" 
 
@@ -70,8 +71,8 @@ _redo_key()
 }
 _redo_selector()
 {
-  typeset _redo _hist _ps1 t l nl=$'\n'
-  [ "$BASH" ] && _tput el >&2 && printf '%s' "$1" >&2
+  typeset _redo _hist t l nl=$'\n'
+  [ "$BASH" ] && _tput el >&2 && printf "%s" "$1" >&2
   printf "\n" >&2
   _redo="$(selector -p redo -m 10 -k _redo_key -i "$(_get_hist |grep -F -- "$1" 2>/dev/null)" || printf "%s" "$1")"
   printf "%s" "${_redo//↵ /$nl}"
@@ -92,11 +93,11 @@ _redow() {
   zle vi-insert
 }
 
-# bash bind -x 
+# bash bind -x bugged clearing prompt/command
 _redob() {
     typeset _ps1
     [ "$UID" = 0 ] && _ps1="$REDO_ROOT_CHAR" || _ps1="$REDO_USER_CHAR"
-    printf "%s " "$_ps1" >&2
+    printf "\r%s " "$_ps1" >&2
     READLINE_LINE=$(_redo_selector "$READLINE_LINE")
     READLINE_POINT=${#READLINE_LINE}
 }
@@ -193,6 +194,7 @@ _redo_binds
 : "${SELECTOR_FILE_ICON:=}" #  🗎            🗋 🖹   📄
 : "${SELECTOR_LINK_ICON:=}"
 : "${SELECTOR_ARCH_ICON:=}"
+: "${SELECTOR_MISS_ICON:=}"
 : "${SELECTOR_CASEI:=false}"
 : "${SELECTOR_POWERLINE:=y}"
 : "${SELECTOR_COL_PROMPT:=30;90;180}" # blue
@@ -210,6 +212,7 @@ $SELECTOR_USE_TPUT && alias _tput=tput
 command -v whence >/dev/null || whence() { type -p "$@"; }
 read _sel_stty <<<$(whence gnustty stty)
 read _sel_lesspipe <<<$(whence lesspipe.sh lesspipe)
+_sel_lesspipe="${_sel_lesspipe##*/}"
 [ "$_sel_lesspipe" ] && _sel_lessopen="|$_sel_lesspipe %s"
 
 _tput() {
@@ -300,12 +303,13 @@ _showmenu()
     }
     icon=''
     ritem="$item"
-    [ "$_sel_option" ] && {
+    [ "$_sel_option" ] && [ ! "$archive" ] && {
       _item_expand
-      if [ -L "$item" ]; then icon="$SELECTOR_LINK_ICON "
+      if [ ! -e "$item" ]; then icon="$SELECTOR_MISS_ICON "
+      elif [ -L "$item" ]; then icon="$SELECTOR_LINK_ICON "
       elif [ -d "$item" ] ;then icon="$SELECTOR_FOLDER_ICON ";fi
-      [ ! "$icon" ] && [ -e "$item" ] && case "$item" in
-        *.tar|*.tar.?z|*.t?z|*.zip|*.rar|*.jar|*.rpm|*.deb) icon="$SELECTOR_ARCH_ICON ";;
+      [ ! "$icon" ] && case "$item" in
+        *.tar|*.tar.?z|*.tar.bz2|*.t?z|*.zip|*.rar|*.jar|*.rpm|*.deb|*.whl|*.tgp) icon="$SELECTOR_ARCH_ICON ";;
         *) icon="$SELECTOR_FILE_ICON ";;
       esac
     }
@@ -367,35 +371,41 @@ _item_expand() {
   return 0
 }
 
+_item_arch() {
+  case "$archive" in
+    *.zip|*.jar|*.whl) item="${item#*[0-9][0-9]:[0-9][0-9]   }";;
+    *.rar) item="${item#*[0-9][0-9]:[0-9][0-9] *[A-F0-9][A-F0-9][A-F0-9]  }";;
+  esac
+  item="${item#*[0-9][0-9]:[0-9][0-9] }"
+  item="${item#*[0-9]  [0-9][0-9][0-9][0-9] }"
+}
+
 _view_file() {
+  typeset type="${item##*.}"
+  [[ $item = $type || ${#type} -gt 4 ]] && type=:sh || type=''
   [ "$archive" ] && {
-    case "$archive" in
-      *.zip|*.jar) item="${item#*[0-9][0-9]:[0-9][0-9]   }";;
-      *.rar) item="${item#*[0-9][0-9]:[0-9][0-9] *[A-F0-9][A-F0-9][A-F0-9]  }";;
-    esac
-    item="${item#*[0-9][0-9]:[0-9][0-9] }"
-    item="${item#*[0-9]  [0-9][0-9][0-9][0-9] }"
-    item="${item% *}"
     _force_nsel=$_nsel
     exec <&1
-    LESSQUIET=1 LESSOPEN="$_sel_lessopen" LESS='-+X -Rc' less "$archive:$item" 2>/dev/null || return 3
+    LESSQUIET=1 LESSOPEN="$_sel_lessopen" LESS='-+X -RSc' less "$archive:$item$type" 2>/dev/null || return 3
     _tput civis
     return 0
   }
+  _force_nsel=$_nsel
   [ -r "$item" ] && [ -f "$item" ] || return 0
   [ "$_sel_lesspipe" ] && case "$item" in
-    *.t?z|*.tar|*.tar.?z|*.rpm|*.zip|*.rar|*.jar|*.deb) 
+    *.t?z|*.tar|*.tar.?z|*.tar.bz2|*.rpm|*.zip|*.rar|*.jar|*.deb|*.whl|*.tgp)
+      _last_nsel=$_nsel _last_items="$_items" _last_items_ori="$_items_ori"
       _items="$(LESSQUIET=1 $_sel_lesspipe "$item:")"
       [ "$_items" ] || _items="$(LESSQUIET=1 $_sel_lesspipe "$item")"
-      [ "$_items" ] || { _items="$_items_ori";return 3; }
+      [ "$_items" ] || { _items="$_last_items";last_items='';return 3; }
       _items_ori="$_items"
       archive="$item"
+      _force_nsel=''
       return 0
     ;;
   esac
-  _force_nsel=$_nsel
   exec <&1
-  LESSQUIET=1 LESSOPEN="$_sel_lessopen" LESS='-+X -Rc' less "$item"
+  LESSQUIET=1 LESSOPEN="$_sel_lessopen" LESS='-+X -RSc' less "$item$type" 2>/dev/null
   _tput civis
   return 0
 }
@@ -413,24 +423,35 @@ _dirbrowse() {
 
 _file_keys() {
   typeset k="$1" item="${_aitems[$_nsel]}"
-  [ "$archive" ] || _item_expand 
+  [ "$archive" ] && _item_arch || _item_expand 
   case "$k" in
     $'\t') # tab
-      selected="$item"
-      return 1
+      [ "$archive" ] && {
+        selected="$_sel_lesspipe $(printf %q "$archive:$item")";
+        return 1
+      }
     ;;
     '[C'|OC) # right
-      [ ! "$filter" ] && _last_nsel=$_nsel
-      [ -d "$item" ] && { _dirbrowse "$item"; return $?; } || { _view_file; return $?; }
+      [ -d "$item" ] && {
+        _last_nsel=$_nsel _last_items="$_items" _last_items_ori="$_items_ori"
+        _dirbrowse "$item"; return $?
+      }
+      _view_file; return $?
     ;;
     '[D'|OD) # left
+      [ "$_last_items" ] && {
+        _items="$_last_items" _items_ori="$_last_items_ori"
+        _last_items='' _last_items_ori=''
+        _force_nsel=$_last_nsel _last_nsel='' archive=''
+        return 0
+      }
       [ "$archive" ] && item="$archive" && _last_nsel=1
       [[ "$item" = */* ]] && item="${item%/*}" || item="."
       [ "$archive" ] || { _path_rprefix=''; _path_fprefix=''; item="$item/.."; }
       archive=''
       _dirbrowse "$item"
       _force_nsel=$_last_nsel
-      unset _last_nsel
+      _last_nsel=''
       return 0
     ;;
     '[1;2C') # shift right
@@ -449,6 +470,12 @@ _file_keys() {
       _items=$(printf "%s\n" "${_aitems[@]}"|grep -E -v '^\.[^/]|/\.')
       [ "$_items" ] || return 1
       return 0
+    ;;
+    'OQ') # F2
+      [ "$archive" ] && {
+        selected="$_sel_lesspipe $archive:$item"
+        return 1
+      }
     ;;
     'OR'|$'\x12') # F3 Ctrl-R
       _view_file
@@ -520,6 +547,10 @@ _domenu()
         filter='';_showmenu $((_nsel+lines-1));;
       '[5~'|$'\x02'|'[1;2A') #pageup Ctl-B shift-up
         filter='';_showmenu $((_nsel-lines+1));;
+      'OQ') # F2
+        selected="${_sel_lesspipe:-cat} ${_aitems[$_nsel]}"
+        break
+      ;;
       '[19~'|$'\x04'|'[3~') # F8 Ctl-D delete
         unset "_aitems[$_nsel]"
         [ "$ZSH_VERSION" ] && _aitems=("${(@)_aitems[1,$_nsel-1]}" "${(@)_aitems[$_nsel+1,$nbitems]}") ||\
@@ -560,7 +591,7 @@ _domenu()
       $'\x01') # Ctl-A => all
         _maxlines=''
         _showmenu;;
-      $'\x0d'|''|$'\n'|$'\t') # enter
+      $'\x0d'|''|$'\n'|$'\t') # enter tab
         selected="${_aitems[$_nsel]}"
         break;;
       *) break;
@@ -576,7 +607,7 @@ function selector
   typeset prompt filter
   typeset bg="\e[48;2;" fg="\e[38;2;" pl=""
   typeset wfg="$fg${SELECTOR_COL_TEXT}m"
-  typeset _items _aitems _maxlines _autofilter _keyfunc _sel_option _nsel _items_ori disp_item_sel disp_item disp_form key nbitems _find_type _path_fprefix _path_rprefix _last_nsel e archive
+  typeset _items _aitems _maxlines _autofilter _keyfunc _sel_option _nsel _items_ori disp_item_sel disp_item disp_form key nbitems _find_type _path_fprefix _path_rprefix _last_nsel _last_items _last_items_ori e archive
   prompt='select'
   selected=''
   _maxlines=''
@@ -637,15 +668,15 @@ function selector
   disp_form="$bg${SELECTOR_COL_PROMPT}m$wfg %s $fg${SELECTOR_COL_PROMPT}m$bg${SELECTOR_COL_TOTAL}m$pl$wfg %s$fg${SELECTOR_COL_TOTAL}m\e[49m$pl\e[0m %s"
   typeset _stty_ori=$($_sel_stty -g </dev/tty 2>/dev/null)
   $_sel_stty intr '' </dev/tty 2>/dev/null
-  LC_ALL=$__selector_lc _domenu >&2
+  [ "$__sel_lc" ] && LC_ALL="$__sel_lc" _domenu >&2 || _domenu >&2
   $_sel_stty "$_stty_ori" </dev/tty 2>/dev/null
   selected="${selected%%$'\t'*}"
   [ "$selected" ] && printf "%s" "$selected" && return 0
   return 1
 }
 
-[[ "$LANG" = *UTF-8 ]] && __selector_lc="$LANG" || {
-  type locale >/dev/null 2>/dev/null && locale -a |grep -iq "en_US.UTF-*8" && __selector_lc=en_US.UTF-8 || __selector_lc=C.UTF-8
+[[ "$LANG" = *UTF-8 ]] || {
+  type locale >/dev/null 2>/dev/null && locale -a |grep -iq "en_US.UTF-*8" && __sel_lc=en_US.UTF-8 || __sel_lc=C.UTF-8
 }
 
 :
