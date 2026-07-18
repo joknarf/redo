@@ -1,0 +1,227 @@
+# redo bash/zsh command history
+# Author : Franck Jouvanceau
+#
+# bash bind -x prefix
+: ${REDO_USER_CHAR:="$ps1_user_char"} #nerpd
+: ${REDO_ROOT_CHAR:="$ps1_root_char"} #nerdp
+: ${REDO_USER_CHAR:="$"}
+: ${REDO_ROOT_CHAR:="#"}
+
+_parse_hist() {
+  awk '
+    BEGIN{ done[""]=1 }
+    $0 in done {next}
+    NR==1{next}
+    { done[$0]=1 }
+    gr && ! index($0,gr) { next }
+    { sub("\n$","");gsub("\n",ret);print substr($0,2) }
+  ' RS='\t' ret='↲ ' gr="$1" 2>/dev/null
+}
+
+[[ $OS = Windows* ]] && _parse_hist() {
+  local rec gr="$1"
+  declare -A dup
+  while IFS= read -r -d $'\t' rec; do
+    ((${#rec})) || continue
+    ((${#dup["$rec"]})) && continue
+    [[ $rec != *$gr* ]] && continue
+    dup["$rec"]=1
+    rec=${rec//$'\n'/$'↲ '}
+    printf '%s\n' "${rec:1:-2}"
+  done
+}
+
+_get_hist()
+{
+  local hst="$HISTTIMEFORMAT"
+  case "$BASH_VERSION#$ZSH_VERSION" in
+    3.*|4.[01].*) # bug fc missing prev cmd
+      HISTTIMEFORMAT=''
+      history |awk '
+      NR==1{prelen=index($0,"1")}
+      /^ *[0-9]+  /{rec[++i]=substr($0,prelen+3);next}
+      {rec[i]=rec[i] ret $0}
+      END{ done[""]=1
+        for(j=i;j>0;j--) {
+          if (rec[j] in done) continue
+          if (gr && !index(rec[j],gr)) continue
+          print rec[j]
+          done[rec[j]]=1
+        }
+      }' ret='↲ ' gr="$1"
+      HISTTIMEFORMAT="$hst"
+    ;;
+    "$BASH_VERSION#") fc -lnr -0 -10000 |_parse_hist "$1";;
+    "#$ZSH_VERSION") _parse_hist "$1" <<<$'\t '"${(pj:\n\t :)history}";;
+  esac
+}
+
+_redo_del()
+{
+  local todel="$1" i _hist
+  [ "$todel" ] || return
+  [ "$ZSH_VERSION" ] && {
+  # remove from HISTFILE as not possible in ZSH
+  awk '{
+    if (b) gsub(ret,"\n",todel)
+    else gsub(ret, "\\\n",todel)
+    while (ind = index($0, todel)) {
+      print(substr($0, 1, ind-1))
+      $0 = substr($0, ind+length(todel)-1)
+    }
+  }1' ret='↲ ' RS='\003' ORS='' b="$BASH" todel="\n${todel//\\/\\\\}\n" "${HISTFILE:=~/.bash_history}" >~/.redo_history.tmp 2>/dev/null && mv ~/.redo_history.tmp "$HISTFILE"
+  }
+  [ "$BASH" ] && {
+    while read i
+    do
+      history -d $i
+    done < <(HISTTIMEFORMAT='' history| awk '
+        NR==1{prelen=index($0,1)}
+        /^ *[0-9]/ {rec=substr($0,prelen+3)}
+        index(rec,todel) { nb[++i]=substr($0,1,prelen)+0 }
+        END{ for (j=i;j>0;j--) print nb[j] }
+      ' todel="${todel//\\/\\\\}"
+    )
+    history -w
+  }
+  # use setopt appendhistory + setopt incappendhistory
+  [ "$ZSH_VERSION" ] && builtin fc -p $HISTFILE $HISTSIZE $SAVEHIST #not working in zle call
+}
+
+redodel()
+{
+  _sel_tput cuu1 >&2
+  selector -p redodel -m 10 -k _redo_key -f <(_get_hist)
+}
+
+_redo_key()
+{
+  case "$key" in
+    '[19~'|'ctrl-d'|'[3~') # F8 Ctl-D delete
+      _redo_del "$item"
+      ;;
+  esac
+  return 2
+}
+_redo_selector()
+{
+  local _hist t l nl=$'\n'
+  [ "$2" ] || local selected
+  [ "$BASH" ] && _sel_tput el >&2 && printf "%s" "$1" >&2
+  printf "\n" >&2
+  selector -q -p redo -m 10 -k _redo_key -f <(_get_hist "$1") || selected="$1"
+  _sel_tput cuu1 >&2
+  # bash 3/4 bug repeating prompt/command
+  [[ "$BASH_VERSION" = @(3.*|4.[0-3].*) ]] && {
+    t=${PS1//$'\n'/}
+    l=$(( ${#PS1} - ${#t} ))
+    [ "$l" -gt 0 ] && _sel_tput cuu $l >&2
+  }
+  selected="${selected//↲ /$nl}"
+  [ "$2" ] && return
+  printf "%s" "${selected}"
+}
+
+_redow() {
+  local selected
+  _redo_selector "$BUFFER" -
+  BUFFER="$selected"
+  #zle reset-prompt
+  zle -Rc
+  zle end-of-line
+  zle vi-insert
+}
+
+# bash bind -x bugged clearing prompt/command
+_redob() {
+    local _ps1 selected
+    [ "$UID" = 0 ] && _ps1="$REDO_ROOT_CHAR" || _ps1="$REDO_USER_CHAR"
+    printf "\r%s " "$_ps1" >&2
+    _redo_selector "$READLINE_LINE" -
+    READLINE_LINE=$selected
+    READLINE_POINT=${#READLINE_LINE}
+}
+
+_redo_binds()
+{
+  local redo_bind
+  [ -t 1 ] || return
+  [[ ! -o emacs ]] && [[ ! -o vi ]] && set -o emacs
+  [ "${BASH_VERSION%%.*}" = 3 ] && {
+    bind -m vi-insert '"\C-xr": redraw-current-line'
+    bind -m vi-insert '"\C-xx": shell-expand-line'
+    bind -m vi-insert '"\C-xk": backward-kill-line'
+    bind -m vi-insert '"\C-xs": character-search'
+    bind -m vi-insert '"\C-xe": kill-line'
+    bind -m vi-insert '"\C-xm": set-mark'
+    bind -m vi-insert '"\C-xc": exchange-point-and-mark'
+    # safe param quoting (but take only current line until first simple quote)
+    # prevent expansion in filter / bell ring
+    # - append simple quote to line
+    # - add "." begin of line return begin of line
+    # - search simple quote
+    # - mark position
+    # - delete first character "." added
+    # - exchange mark
+    # - add character "." before simple quote (for kill ring if empty)
+    # - cut before simple quote
+    # - paste in param, remove last character added
+    # - cut end of line
+    # - expand line
+    bind_redo='\eA'"'"'\eI.\eI\C-xs'"'"'\C-xm\e0xi\C-xc\ei.\C-xk\"$(_redo_selector '"'"'\C-y\C-h'"'"')\"\C-xe\eI\C-xx\eA\C-xr'
+    # version not taking parameter from current command line:
+    #bind -m vi-insert '"\C-r": "\C-xd$(_redo_selector)\e0i\C-xx\C-xr"'
+    bind -m vi-insert '"\C-r": "'"$bind_redo"'"' # ctl r
+    bind -m vi-insert '"\e/": "'"$bind_redo"'"'  # esc /
+    bind -m vi-insert '"\e[Z": "'"$bind_redo"'"' # shift tab
+    bind -m vi-command '"/": "'"A$bind_redo"'"'  # /
+    bind -m vi-command '"\e[Z": "'"A$bind_redo"'"' # shift tab
+
+    bind -m emacs-standard '"\C-xr": redraw-current-line'
+    bind -m emacs-standard '"\C-xx": shell-expand-line'
+    bind -m emacs-standard '"\C-xk": backward-kill-line'
+    bind -m emacs-standard '"\C-xs": character-search'
+    #bind -m emacs-standard '"\C-xb": character-search-backward'
+    bind -m emacs-standard '"\C-xd": delete-char'
+    bind -m emacs-standard '"\C-xm": set-mark'
+    bind -m emacs-standard '"\C-xc": exchange-point-and-mark'
+    # \C-a beginning-of-line
+    # \C-e end-of-line
+    # \C-k kill-line
+    # safe param quoting (takes only current line until first simple quote)
+
+    bind -m emacs-standard '"\C-r": "\C-e'"'"'\C-a.\C-a\C-xs'"'"'\C-xm\C-a\C-xd\C-xc\C-b.\C-xk$(_redo_selector '"'"'\C-y\C-h'"'"')\C-k\C-a\C-xx\C-e\C-xr"'
+    bind -m emacs-standard '"\ex": "\C-r"'
+    bind -m emacs-standard '"\e/": "\C-r"'
+    bind -m emacs-standard '"\e[Z": "\C-r"'
+    return
+  }
+  [ "$BASH" ] && {
+    bind -m vi-insert -x '"\C-r": _redob' # ctl r
+    bind -m vi-insert '"\e/": "\C-r"'  # esc /
+    bind -m vi-insert '"\e[Z": "\C-r"' # shift tab
+    bind -m vi-command -x '"\C-r": _redob' # ctl r
+    bind -m vi-command '"/": "\C-r"'  # esc /
+    bind -m vi-command '"\e[Z": "\C-r"' # shift tab
+    bind -m emacs-standard -x '"\C-r": _redob' # ctl r
+    bind -m emacs-standard '"\e/": "\C-r"'  # esc /
+    bind -m emacs-standard '"\e[Z": "\C-r"' # shift tab
+    return
+  }
+  [ "$ZSH_VERSION" ] && {
+    zle -N _redow
+    # need skip_global_compinit=1 in ~/.zshenv on ubuntu for esc-/ on vicmd map
+    bindkey -M vicmd '/' _redow     # /
+    bindkey -M vicmd '\e[Z' _redow  # shift tab
+    bindkey -M vicmd '^r' _redow    # ctl r
+    bindkey -M viins '\e/' _redow   # esc /
+    bindkey -M viins '\e[Z' _redow  # shift tab
+    bindkey -M viins '^r' _redow    # ctl r
+    bindkey -M emacs '\e/' _redow   # esc /
+    bindkey -M emacs '^r' _redow    # ctl r
+    bindkey -M emacs '\e[Z' _redow  # shift tab
+  }
+}
+
+_redo_binds
+
