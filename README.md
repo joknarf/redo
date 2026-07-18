@@ -29,13 +29,8 @@ fly add joknarf/redo
 or just clone it:
 ```shell
 git clone https://github.com/joknarf/redo
-source redo/redo
+source redo/redo.plugin.<shell>
 ```
-or to test, source it from github repository:
-```shell
-source <(curl -Ls https://raw.githubusercontent.com/joknarf/redo/main/redo)
-```
-
 
 ## keys in menu
 
@@ -58,23 +53,7 @@ source <(curl -Ls https://raw.githubusercontent.com/joknarf/redo/main/redo)
 
 ## delete history commands
 
-To delete command from current shell history and `$HISTFILE` use `redodel` command then chose command and press <kbd>Del</kbd> or <kbd>F8</kbd>.  
-
-Using <kbd>Del</kbd>/<kbd>F8</kbd> when using redo bind key (<kbd>Esc</kbd><kbd>/</kbd> or <kbd>Ctl</kbd><kbd>R</kbd>) will not remove command from current shell history (line editing limitation), but the `$HISTFILE` will be purged from the command.  
-
-When deleting history in `$HISTFILE` using redo bind key, set the following options to ensure the history is not written later in `$HISTFILE` by shell.
-
-* zsh options to set :
-  ```zsh
-  setopt appendhistory
-  setopt incappendhistory
-  ```
-
-* bash options to set :
-  ```
-  shopt -s histappend cmdlist
-  PROMPT_COMMAND='history -a'
-  ```
+With bash, using <kbd>Del</kbd>/<kbd>F8</kbd> when using redo bind key (<kbd>Esc</kbd><kbd>/</kbd> or <kbd>Ctl</kbd><kbd>R</kbd>) will remove command from current shell history and $HISTFILE.  
 
 ## limitations
 
