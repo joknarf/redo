@@ -496,8 +496,9 @@ _sel_domenu()
           ((f>cur)) && ((filtered[i-1]=f-1))
           ((i++))
         done
-        [ "$ZSH_VERSION" ] && _aitems=("${(@)_aitems[1,$cur-1]}" "${(@)_aitems[$cur+1,$nbitems]}") ||\
-          { unset "_aitems[$cur]";_aitems=(_ "${_aitems[@]}") && unset '_aitems[0]'; }
+        if [ "$ZSH_VERSION" ];then _aitems=("${(@)_aitems[1,$cur-1]}" "${(@)_aitems[$cur+1,${#_aitems[@]}]}") 
+        else unset "_aitems[$cur]";_aitems=(_ "${_aitems[@]}") && unset '_aitems[0]'; 
+        fi
         _sel_nbitems
         _sel_tput ed
         ((nbitems)) || break
