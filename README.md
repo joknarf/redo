@@ -53,7 +53,7 @@ source redo/redo.plugin.<shell>
 
 ## delete history commands
 
-With bash, using <kbd>Del</kbd>/<kbd>F8</kbd> when using redo bind key (<kbd>Esc</kbd><kbd>/</kbd> or <kbd>Ctl</kbd><kbd>R</kbd>) will remove command from current shell history and $HISTFILE.  
+Using <kbd>Del</kbd>/<kbd>F8</kbd> when using redo bind key (<kbd>Esc</kbd><kbd>/</kbd> or <kbd>Ctl</kbd><kbd>R</kbd>) will remove command from current shell history and $HISTFILE.  
 
 ## limitations
 
