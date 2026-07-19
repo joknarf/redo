@@ -74,13 +74,18 @@ _redo_del()
   [ "$BASH" ] && {
     while read i
     do
-      history -d $i
+      ((i)) && history -d $i
     done < <(HISTTIMEFORMAT='' history| awk '
         NR==1{prelen=index($0,1)}
-        /^ *[0-9]/ {rec=substr($0,prelen+3)}
-        index(rec,todel) { nb[++i]=substr($0,1,prelen)+0 }
+        /^ *[0-9]/ {
+          if (rec==todel) nb[++i]=recnum
+          rec=substr($0,prelen+3)
+          recnum=substr($0,1,prelen)+0
+          next
+        }
+        { rec=rec ret $0 }
         END{ for (j=i;j>0;j--) print nb[j] }
-      ' todel="${todel//\\/\\\\}"
+      ' todel="${todel//\\/\\\\}" ret='↲ '
     )
     history -w
   }
