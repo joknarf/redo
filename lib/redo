@@ -61,15 +61,15 @@ _redo_del()
   local todel="$1" i _hist
   [ "$todel" ] || return
   [ "$ZSH_VERSION" ] && {
-  # remove from HISTFILE as not possible in ZSH
-  awk '{
-    if (b) gsub(ret,"\n",todel)
-    else gsub(ret, "\\\n",todel)
-    while (ind = index($0, todel)) {
-      print(substr($0, 1, ind-1))
-      $0 = substr($0, ind+length(todel)-1)
-    }
-  }1' ret='↲ ' RS='\003' ORS='' b="$BASH" todel="\n${todel//\\/\\\\}\n" "${HISTFILE:=~/.bash_history}" >~/.redo_history.tmp 2>/dev/null && mv ~/.redo_history.tmp "$HISTFILE"
+    # remove from HISTFILE only
+    [ -w "$HISTFILE" ] || return
+    awk '{
+      gsub(ret, "\\\n",todel)
+      while (ind = index($0, todel)) {
+        print(substr($0, 1, ind-1))
+        $0 = substr($0, ind+length(todel)-1)
+      }
+    }1' ret='↲ ' RS='\003' ORS='' todel="\n${todel//\\/\\\\}\n" "$HISTFILE" >~/.redo_history.tmp 2>/dev/null && mv ~/.redo_history.tmp "$HISTFILE"
   }
   [ "$BASH" ] && {
     while read i
