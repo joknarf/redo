@@ -84,7 +84,7 @@ _redo_del()
           next
         }
         { rec=rec ret $0 }
-        END{ for (j=i;j>0;j--) print nb[j] }
+        END{ if (rec==todel) nb[++i]=recnum;for (j=i;j>0;j--) print nb[j] }
       ' todel="${todel//\\/\\\\}" ret='↲ '
     )
     history -w
