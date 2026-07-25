@@ -31,30 +31,29 @@ _parse_hist() {
   done
 }
 
-_get_hist()
-{
-  local hst="$HISTTIMEFORMAT"
-  case "$BASH_VERSION#$ZSH_VERSION" in
+case "$BASH_VERSION#$ZSH_VERSION" in
     3.*|4.[01].*) # bug fc missing prev cmd
-      HISTTIMEFORMAT=''
-      history |awk '
-      NR==1{prelen=index($0,"1")}
-      /^ *[0-9]+  /{rec[++i]=substr($0,prelen+3);next}
-      {rec[i]=rec[i] ret $0}
-      END{ done[""]=1
-        for(j=i;j>0;j--) {
-          if (rec[j] in done) continue
-          if (gr && !index(rec[j],gr)) continue
-          print rec[j]
-          done[rec[j]]=1
-        }
-      }' ret='↲ ' gr="$1"
-      HISTTIMEFORMAT="$hst"
+      _get_hist() {
+        local hst="$HISTTIMEFORMAT"
+        HISTTIMEFORMAT=''
+        history |awk '
+        NR==1{prelen=index($0,"1")}
+        /^ *[0-9]+  /{rec[++i]=substr($0,prelen+3);next}
+        {rec[i]=rec[i] ret $0}
+        END{ done[""]=1
+          for(j=i;j>0;j--) {
+            if (rec[j] in done) continue
+            if (gr && !index(rec[j],gr)) continue
+            print rec[j]
+            done[rec[j]]=1
+          }
+        }' ret='↲ ' gr="$1"
+        HISTTIMEFORMAT="$hst"
+      }
     ;;
-    "$BASH_VERSION#") fc -lnr -0 -10000 |_parse_hist "$1";;
-    "#$ZSH_VERSION") _parse_hist "$1" <<<$'\t '"${(pj:\n\t :)history}";;
-  esac
-}
+    "$BASH_VERSION#") _get_hist() { fc -lnr -0 -10000 |_parse_hist "$1"; };;
+    "#$ZSH_VERSION") _get_hist() { _parse_hist "$1" <<<$'\t '"${(pj:\n\t :)history}"; };;
+esac
 
 _redo_del()
 {
