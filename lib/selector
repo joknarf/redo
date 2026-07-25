@@ -358,8 +358,11 @@ _sel_dirbrowse() {
     sed -e "s#^$_path_rprefix#$_path_fprefix#" -e s"#^$HOME/#\~/#" -e 's#^\./##'|sort)
   ((${#_aitems[@]})) && _items_ori=("${_aitems[@]}") && return 0
   _aitems=($_a "${_items_ori[@]}")
+  item="${_aitems[_last_nsel]}"
   _sel_nbitems
   _sel_menuprompt
+  _last_items=''
+  _last_nsel=''
   return 3
 }
 
@@ -386,9 +389,10 @@ _sel_file_keys() {
       depth=1
       [ "$_last_items" ] && {
         _aitems=($_a "${_last_items[@]}") _items_ori=("${_last_items_ori[@]}")
+        filtered=($_a "${prev_filtered[@]}");[ "$_a" ] && unset 'filtered[0]'
+        filter=''
         _last_items='' _last_items_ori=''
         _force_nsel=$_last_nsel _last_nsel='' archive=''
-        _sel_init_filter
         return 0
       }
       [ "$archive" ] && item="$archive" && _last_nsel=1
