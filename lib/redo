@@ -60,6 +60,25 @@ _redo_del()
 {
   local todel="$1" i _hist
   [ "$todel" ] || return
+  [ "$BASH" ] && {
+    while read i
+    do
+      ((i)) && history -d $i
+    done < <(fc -lr -0 -10000 | awk '
+        /^[0-9]+\t / { 
+          if (rec==todel) print recnum
+          recnum=$1
+          sub("^[0-9]+\t ","")
+          rec=$0
+          next
+        }
+        { rec=rec ret $0 }
+        END{ if (rec==todel) print recnum }
+      ' todel="${todel//\\/\\\\}" ret='↲ '
+    )
+    history -w
+    return
+  }
   [ "$ZSH_VERSION" ] && {
     # remove from HISTFILE only
     [ -w "$HISTFILE" ] || return
@@ -70,27 +89,9 @@ _redo_del()
         $0 = substr($0, ind+length(todel)-1)
       }
     }1' ret='↲ ' RS='\003' ORS='' todel="\n${todel//\\/\\\\}\n" "$HISTFILE" >~/.redo_history.tmp 2>/dev/null && mv ~/.redo_history.tmp "$HISTFILE"
+    # use setopt appendhistory + setopt incappendhistory
+    builtin fc -p $HISTFILE $HISTSIZE $SAVEHIST #not working in zle call
   }
-  [ "$BASH" ] && {
-    while read i
-    do
-      ((i)) && history -d $i
-    done < <(HISTTIMEFORMAT='' history| awk '
-        NR==1{prelen=index($0,1)}
-        /^ *[0-9]/ {
-          if (rec==todel) nb[++i]=recnum
-          rec=substr($0,prelen+3)
-          recnum=substr($0,1,prelen)+0
-          next
-        }
-        { rec=rec ret $0 }
-        END{ if (rec==todel) nb[++i]=recnum;for (j=i;j>0;j--) print nb[j] }
-      ' todel="${todel//\\/\\\\}" ret='↲ '
-    )
-    history -w
-  }
-  # use setopt appendhistory + setopt incappendhistory
-  [ "$ZSH_VERSION" ] && builtin fc -p $HISTFILE $HISTSIZE $SAVEHIST #not working in zle call
 }
 
 redodel()
