@@ -55,11 +55,9 @@ case "$BASH_VERSION#$ZSH_VERSION" in
     "#$ZSH_VERSION") _get_hist() { _parse_hist "$1" <<<$'\t '"${(pj:\n\t :)history}"; };;
 esac
 
-_redo_del()
-{
-  local todel="$1" i _hist
-  [ "$todel" ] || return
-  [ "$BASH" ] && {
+[ "$BASH" ] && _redo_del() {
+    local todel="$1" i _hist
+    [ "$todel" ] || return
     while read i
     do
       ((i)) && history -d $i
@@ -76,9 +74,10 @@ _redo_del()
       ' todel="${todel//\\/\\\\}" ret='↲ '
     )
     history -w
-    return
-  }
-  [ "$ZSH_VERSION" ] && {
+}
+[ "$ZSH_VERSION" ] && _redo_del() {
+    local todel="$1" i _hist
+    [ "$todel" ] || return
     # remove from HISTFILE only
     [ -w "$HISTFILE" ] || return
     awk '{
@@ -90,7 +89,6 @@ _redo_del()
     }1' ret='↲ ' RS='\003' ORS='' todel="\n${todel//\\/\\\\}\n" "$HISTFILE" >~/.redo_history.tmp 2>/dev/null && mv ~/.redo_history.tmp "$HISTFILE"
     # use setopt appendhistory + setopt incappendhistory
     builtin fc -p $HISTFILE $HISTSIZE $SAVEHIST #not working in zle call
-  }
 }
 
 redodel()
@@ -229,4 +227,4 @@ _redo_binds()
 }
 
 _redo_binds
-
+unset -f _redo_binds
