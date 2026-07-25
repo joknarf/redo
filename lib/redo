@@ -56,7 +56,7 @@ case "$BASH_VERSION#$ZSH_VERSION" in
 esac
 
 [ "$BASH" ] && _redo_del() {
-    local todel="$1" i _hist
+    local todel="$1" i
     [ "$todel" ] || return
     while read i
     do
@@ -76,7 +76,7 @@ esac
     history -w
 }
 [ "$ZSH_VERSION" ] && _redo_del() {
-    local todel="$1" i _hist
+    local todel="$1" i
     [ "$todel" ] || return
     # remove from HISTFILE only
     [ -w "$HISTFILE" ] || return
