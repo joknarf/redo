@@ -51,7 +51,7 @@ case "$BASH_VERSION#$ZSH_VERSION" in
         HISTTIMEFORMAT="$hst"
       }
     ;;
-    "$BASH_VERSION#") _get_hist() { fc -lnr -0 -10000 |_parse_hist "$1"; };;
+    "$BASH_VERSION#") _get_hist() { fc -lnr -0 -"${HISTSIZE:-500}" |_parse_hist "$1"; };;
     "#$ZSH_VERSION") _get_hist() { _parse_hist "$1" <<<$'\t '"${(pj:\n\t :)history}"; };;
 esac
 
@@ -61,7 +61,7 @@ esac
     while read i
     do
       ((i)) && history -d $i
-    done < <(fc -lr -0 -10000 | awk '
+    done < <(fc -lr -0 -"${HISTSIZE:-500}" | awk '
         /^[0-9]+\t / { 
           if (rec==todel) print recnum
           recnum=$1
