@@ -456,6 +456,7 @@ _sel_domenu()
   ((nbitems<_maxlines)) && _sel_showmenu
   while ((break==0))
   do
+    selected=''
     _sel_readkey #$key
     e=2
     [ "$_sel_option" ] && { _sel_file_keys "$key"; e=$?; }
