@@ -393,6 +393,7 @@ _sel_file_keys() {
         filter=''
         _last_items='' _last_items_ori=''
         _force_nsel=$_last_nsel _last_nsel='' archive=''
+        icons=();set -A icons 2>/dev/null
         return 0
       }
       [ "$archive" ] && item="$archive" && _last_nsel=1
