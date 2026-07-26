@@ -201,7 +201,7 @@ _sel_showmenu()
     }
     icon=''
     ritem="$item"
-    [ "$_sel_option" ] && [ ! "$archive" ] && [ ! "${icons[i]}" ] && {
+    [ "$_sel_option" ] && [ ! "${icons[j]}" ] && [ ! "$archive" ] && {
       _sel_item_expand
       if [ ! -e "$item" ]; then icon="$SELECTOR_MISS_ICON "
       elif [ -L "$item" ]; then icon="$SELECTOR_LINK_ICON "
@@ -210,12 +210,12 @@ _sel_showmenu()
         *.tar|*.tar.?z|*.tar.bz2|*.t?z|*.zip|*.rar|*.jar|*.rpm|*.deb|*.whl|*.tgp) icon="$SELECTOR_ARCH_ICON ";;
         *) icon="$SELECTOR_FILE_ICON ";;
       esac
-      icons[i]="$icon"
+      icons[j]="$icon"
     }
     if ((_nsel == i)); then
-      printf "$disp_item_sel" $w $i $maxw "${icons[i]}${ritem:0:$maxiw}" "${comment:0:$maxcw}"
+      printf "$disp_item_sel" $w $i $maxw "${icons[j]}${ritem:0:$maxiw}" "${comment:0:$maxcw}"
     else
-      printf "$disp_item" $w $i $maxw "${icons[i]}${ritem:0:$maxiw}" "${comment:0:$maxcw}"
+      printf "$disp_item" $w $i $maxw "${icons[j]}${ritem:0:$maxiw}" "${comment:0:$maxcw}"
     fi
     _sel_tput el #clear end of line
   done
@@ -245,28 +245,26 @@ _sel_init_filter() {
 _sel_items_filter()
 {
   typeset filt="$1" j=1 i
-  [ "$filt" ] && {
-    ufilt="$filt"
-    ((SELECTOR_CASEI)) && _sel_upper ufilt
-    _sel_nbitems
-    _nsel=''
-    if ((${#filtered[@]}));then
-      _sel_init_filter
-      for i in "${prev_filtered[@]}";do
-        uitem="${_aitems[i]}"
-        ((SELECTOR_CASEI)) && _sel_upper uitem
-        [[ $uitem = *$ufilt* ]] && filtered[j++]=$i
-      done
-    else
-      for ((i=1;i<=nbitems;i++));do
-        uitem="${_aitems[i]}"
-        ((SELECTOR_CASEI)) && _sel_upper uitem
-        [[ $uitem = *$ufilt* ]] && filtered[j++]=$i
-      done
-    fi
-    ((nbitems=${#filtered[@]}))
-  }
   _nsel=1
+  [ "$filt" ] || return
+  ufilt="$filt"
+  ((SELECTOR_CASEI)) && _sel_upper ufilt
+  _sel_nbitems
+  if ((${#filtered[@]}));then
+    _sel_init_filter
+    for i in "${prev_filtered[@]}";do
+      uitem="${_aitems[i]}"
+      ((SELECTOR_CASEI)) && _sel_upper uitem
+      [[ $uitem = *$ufilt* ]] && filtered[j++]=$i
+    done
+  else
+    for ((i=1;i<=nbitems;i++));do
+      uitem="${_aitems[i]}"
+      ((SELECTOR_CASEI)) && _sel_upper uitem
+      [[ $uitem = *$ufilt* ]] && filtered[j++]=$i
+    done
+  fi
+  ((nbitems=${#filtered[@]}))
 }
 
 _sel_readkey()
