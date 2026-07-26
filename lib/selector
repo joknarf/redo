@@ -201,7 +201,7 @@ _sel_showmenu()
     }
     icon=''
     ritem="$item"
-    [ "$_sel_option" ] && [ ! "$archive" ] && {
+    [ "$_sel_option" ] && [ ! "$archive" ] && [ ! "${icons[i]}" ] && {
       _sel_item_expand
       if [ ! -e "$item" ]; then icon="$SELECTOR_MISS_ICON "
       elif [ -L "$item" ]; then icon="$SELECTOR_LINK_ICON "
@@ -210,11 +210,12 @@ _sel_showmenu()
         *.tar|*.tar.?z|*.tar.bz2|*.t?z|*.zip|*.rar|*.jar|*.rpm|*.deb|*.whl|*.tgp) icon="$SELECTOR_ARCH_ICON ";;
         *) icon="$SELECTOR_FILE_ICON ";;
       esac
+      icons[i]="$icon"
     }
     if ((_nsel == i)); then
-      printf "$disp_item_sel" $w $i $maxw "$icon${ritem:0:$maxiw}" "${comment:0:$maxcw}"
+      printf "$disp_item_sel" $w $i $maxw "${icons[i]}${ritem:0:$maxiw}" "${comment:0:$maxcw}"
     else
-      printf "$disp_item" $w $i $maxw "$icon${ritem:0:$maxiw}" "${comment:0:$maxcw}"
+      printf "$disp_item" $w $i $maxw "${icons[i]}${ritem:0:$maxiw}" "${comment:0:$maxcw}"
     fi
     _sel_tput el #clear end of line
   done
@@ -237,6 +238,7 @@ _sel_init_filter() {
   prev_filtered=($_a "${filtered[@]}")
   [ "$_a" ] && unset 'prev_filtered[0]'
   filtered=();set -A filtered 2>/dev/null
+  icons=();set -A icons 2>/dev/null
   return 0
 }
 
@@ -559,7 +561,7 @@ function selector
   typeset prompt filter
   typeset bg="\e[48;2;" fg="\e[38;2;" pl=""
   typeset wfg="$fg${SELECTOR_COL_TEXT}m"
-  typeset _items _aitems _maxlines _autofilter _keyfunc _sel_option _nsel=1 _items_ori disp_item_sel disp_item disp_form key nbitems _find_type _path_fprefix _path_rprefix _last_nsel _last_items _last_items_ori e archive quiet=0 shift stream _a filtered prev_filtered depth=1 tty_init=0 _stty_ori i j lines cur item ritem itemfile uitem ufilt break=0 _powerline
+  typeset _items _aitems _maxlines _autofilter _keyfunc _sel_option _nsel=1 _items_ori disp_item_sel disp_item disp_form key nbitems _find_type _path_fprefix _path_rprefix _last_nsel _last_items _last_items_ori e archive quiet=0 shift stream _a filtered prev_filtered depth=1 tty_init=0 _stty_ori i j lines cur item ritem itemfile uitem ufilt break=0 _powerline icons
   [ "$ZSH_VERSION" ] || _a='_'
   ((SELECTOR_CASEI)) || SELECTOR_CASEI=0
   prompt='select'
