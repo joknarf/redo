@@ -440,8 +440,9 @@ _sel_file_keys() {
     'OS'|'ctrl-e') # F4 Ctrl-E
       _force_nsel=$_nsel
       [ -r "$item" ] && [ -f "$item" ] || return 0
+      _sel_tty_restore
       "${EDITOR:-vi}" "$item" </dev/tty >/dev/tty 2>/dev/tty
-      _sel_tput civis
+      _sel_tty_init
       return 0
     ;;
   esac
