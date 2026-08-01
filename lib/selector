@@ -111,7 +111,7 @@ _sel_tty_restore() {
   _sel_tput ed >&2
   _sel_tput cnorm >&2
   : $("$_sel_stty" "$_stty_ori" </dev/tty >/dev/null 2>&1)
-  return 0
+  tty_init=0
 }
 
 _sel_load_items() {
@@ -322,9 +322,10 @@ _sel_view_file() {
   [[ $item = $type || ${#type} -gt 4 ]] && type=:sh || type=''
   [ "$archive" ] && {
     _force_nsel=$_nsel
+    _sel_tty_restore
     LESSQUIET=1 LESSOPEN="$_sel_lessopen" LESS='-+X -RSc' \
       less "$archive:$item$type" </dev/tty >/dev/tty 2>/dev/null || return 3
-    _sel_tput civis
+    _sel_tty_init
     return 0
   }
   _force_nsel=$_nsel
@@ -342,9 +343,10 @@ _sel_view_file() {
       return 0
     ;;
   esac
+  _sel_tty_restore
   LESSQUIET=1 LESSOPEN="$_sel_lessopen" LESS='-+X -RSc' \
     less "$item$type" </dev/tty >/dev/tty 2>/dev/null
-  _sel_tput civis
+  _sel_tty_init
   return 0
 }
 
