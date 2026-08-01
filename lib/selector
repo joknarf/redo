@@ -89,7 +89,6 @@ _sel_probe_smam() {
 }
 
 _sel_tty_init() {
-  typeset stty_opts=(intr '')
   ((tty_init)) && return
   _stty_ori="$($_sel_stty -g </dev/tty 2>/dev/null)"
   : $("$_sel_stty" intr '' -echo </dev/tty 2>/dev/null)
