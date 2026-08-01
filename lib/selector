@@ -120,10 +120,10 @@ _sel_load_items() {
     typeset -i s=SECONDS+1 sec
     stream=1
     _sel_init_filter
-    _aitems=();set -A _aitems 2>/dev/null
+    _aitems=($__)
     while IFS=$'\n' read -r it;do
         ((${#it})) || continue
-        ((nb == 2)) && _sel_menuprompt
+        ((nb == 2)) && _sel_tty_init && _sel_menuprompt
         ((nb == _maxlines)) && _sel_showmenu
         _aitems[nb++]="$it"
         ((sec=SECONDS))
@@ -143,11 +143,10 @@ _sel_load_items() {
 
 _sel_menuprompt()
 {
-  typeset p="${1:-$prompt}" filt="${filter:-$item}" s w nbi=$nbitems
-  _sel_tty_init
+  typeset p="${1:-$prompt}" filt="${filter:-$item}" pr w nbi=$nbitems
   printf "\r"
   [ "$stream" ] && nbi='...'
-  ((SEL_SMAM)) && w=1000 || { s="  $p  $_nsel/$nbi  "; ((w=COLUMNS-${#s})); }
+  ((SEL_SMAM)) && w=1000 || { pr="  $p  $_nsel/$nbi  "; ((w=COLUMNS-${#pr})); }
   printf "$disp_form" "$p" "$_nsel/$nbi" "${filt:0:$w}"
   _sel_tput el
   printf "\r"
@@ -238,8 +237,8 @@ _sel_nbitems() {
 _sel_init_filter() {
   prev_filtered=($_a "${filtered[@]}")
   [ "$_a" ] && unset 'prev_filtered[0]'
-  filtered=();set -A filtered 2>/dev/null
-  icons=();set -A icons 2>/dev/null
+  filtered=($__)
+  icons=($__)
   return 0
 }
 
@@ -394,7 +393,7 @@ _sel_file_keys() {
         filter=''
         _last_items='' _last_items_ori=''
         _force_nsel=$_last_nsel _last_nsel='' archive=''
-        icons=();set -A icons 2>/dev/null
+        icons=($__)
         return 0
       }
       [ "$archive" ] && item="$archive" && _last_nsel=1
@@ -455,6 +454,7 @@ _sel_domenu()
   _nsel=1
   ((nbitems)) || return 1
   ((nbitems<_maxlines)) && _sel_showmenu
+  _sel_tty_init
   while ((break==0))
   do
     selected=''
@@ -562,7 +562,7 @@ function selector
   typeset prompt filter
   typeset bg="\e[48;2;" fg="\e[38;2;" pl=""
   typeset wfg="$fg${SELECTOR_COL_TEXT}m"
-  typeset _items _aitems _maxlines _autofilter _keyfunc _sel_option _nsel=1 _items_ori disp_item_sel disp_item disp_form key nbitems _find_type _path_fprefix _path_rprefix _last_nsel _last_items _last_items_ori e archive quiet=0 shift stream _a filtered prev_filtered depth=1 tty_init=0 _stty_ori i j lines cur item ritem itemfile uitem ufilt break=0 _powerline icons
+  typeset _items _aitems _maxlines _autofilter _keyfunc _sel_option _nsel=1 _items_ori disp_item_sel disp_item disp_form key nbitems _find_type _path_fprefix _path_rprefix _last_nsel _last_items _last_items_ori e archive quiet=0 shift stream _a filtered prev_filtered depth=1 tty_init=0 _stty_ori i j s lines cur item ritem itemfile uitem ufilt break=0 _powerline icons __
   [ "$ZSH_VERSION" ] || _a='_'
   ((SELECTOR_CASEI)) || SELECTOR_CASEI=0
   prompt='select'
@@ -600,7 +600,7 @@ function selector
         ;;
       -o|--option)
         [ "$2" ] && _sel_option="$2" || return 1
-        _find_type=();set -A _find_type 2>/dev/null
+        _find_type=($__)
         [ "$_sel_option" = dirnames ] && _find_type=(-type d)
         ;;
       -q|--quiet) quiet=1;shift=1
